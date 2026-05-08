@@ -2,8 +2,8 @@ namespace Archeology.Prototype;
 
 public enum TileType
 {
-    Empty,
-    Soil,
-    Stone,
-    Fragment,
+	Empty,
+	Soil,
+	Stone,
+	Fragment,
 }
