@@ -113,7 +113,7 @@ The prototype must validate the core gameplay loop:
 
 - 2D grid (tile-based)
 - Start with a single layer
-- Each dig action clears an area, not a single tile
+- Each dig action targets a single tile
 
 Tile types:
 - soil (fast)

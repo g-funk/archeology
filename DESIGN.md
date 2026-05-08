@@ -79,9 +79,8 @@ The player:
 
 ## 3.2 Digging Mechanics
 
-- Tap or swipe to excavate clusters (not single pixels)
-- Each action clears:
-  - small area (3–10 tiles)
+- Tap to excavate one tile at a time
+- Soil clears in one hit; stone takes more
 
 ---
 

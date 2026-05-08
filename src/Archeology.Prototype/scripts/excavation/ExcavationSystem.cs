@@ -36,7 +36,7 @@ public partial class ExcavationSystem : Node
 		}
 		else
 		{
-			_grid.DigArea(cell);
+			_grid.Dig(cell);
 		}
 	}
 }
