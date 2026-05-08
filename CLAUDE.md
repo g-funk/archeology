@@ -119,8 +119,11 @@ Tile types:
 - soil (fast)
 - stone (slower)
 
-Constraint:
-- cannot dig directly through fragments
+Fragments:
+- buried under a soil or stone cover
+- clicking a fragment tile digs its cover (same speed as plain soil/stone)
+- once the cover is cleared, the fragment is exposed and can be collected with another click
+- clearing a tile next to a buried fragment surfaces a hint on the fragment tile
 
 ---
 

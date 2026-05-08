@@ -86,8 +86,9 @@ The player:
 
 ## 3.3 Constraints
 
-- Cannot dig through artifact fragments directly
-- Must excavate surrounding tiles first
+- Fragments are buried under soil or stone
+- Digging a fragment tile clears its cover; once clear, the fragment is exposed
+- Clearing a tile adjacent to a buried fragment surfaces a hint on the fragment tile
 
 ---
 

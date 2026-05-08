@@ -5,5 +5,4 @@ public enum TileType
 	Empty,
 	Soil,
 	Stone,
-	Fragment,
 }
