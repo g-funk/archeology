@@ -35,6 +35,9 @@ If there is a conflict:
 - Follow DESIGN.md for gameplay decisions
 - Follow CLAUDE.md for structure and implementation
 
+If user requests changes to design, update DESIGN.md accordingly. 
+If user requests changes that conflict or modfify instructions in CLAUDE.md, update the document
+
 ---
 
 # Solution Structure
