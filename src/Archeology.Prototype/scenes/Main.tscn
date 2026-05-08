@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://b1archproto00001"]
+[gd_scene load_steps=4 format=3 uid="uid://b1archproto00001"]
 
 [ext_resource type="Script" path="res://scripts/grid/Grid.cs" id="1_grid"]
 [ext_resource type="Script" path="res://scripts/excavation/ExcavationSystem.cs" id="2_dig"]
+[ext_resource type="Script" path="res://scripts/ui/CollectionPanel.cs" id="3_panel"]
 
 [node name="Main" type="Node2D"]
 
@@ -32,3 +33,11 @@ offset_bottom = 70.0
 text = "Click to dig (soil = 1 hit, stone = 2). Ochre tiles hint at a buried fragment cell. Fragments span multiple tiles — expose every tile of the shape (whole shape glows pale gold), then click any cell to collect."
 theme_override_colors/font_color = Color(0.78, 0.72, 0.58, 1)
 theme_override_font_sizes/font_size = 14
+
+[node name="CollectionPanel" type="Control" parent="HUD"]
+offset_left = 1060.0
+offset_top = 80.0
+offset_right = 1264.0
+offset_bottom = 656.0
+script = ExtResource("3_panel")
+GridPath = NodePath("../../Grid")
