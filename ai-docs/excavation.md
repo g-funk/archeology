@@ -15,7 +15,8 @@ The dig mechanic — the player clicks tiles in a 2D grid; each click damages a 
 | `src/Archeology.Prototype/scripts/grid/TileType.cs` | `TileType` enum: `Empty`, `Soil`, `Stone` |
 | `src/Archeology.Prototype/scripts/grid/Grid.cs` | Terrain grid, dig logic, drawing |
 | `src/Archeology.Prototype/scripts/excavation/ExcavationSystem.cs` | Mouse input → forwards to `Grid.HandleClick` |
-| `src/Archeology.Prototype/scenes/Main.tscn` | Grid (Node2D) + ExcavationSystem (Node) |
+| `src/Archeology.Prototype/scripts/player/CameraController.cs` | `Camera2D` that auto-fits the grid into the visible region |
+| `src/Archeology.Prototype/scenes/Main.tscn` | Grid (Node2D) + ExcavationSystem (Node) + Camera (Camera2D) |
 
 ---
 
@@ -92,7 +93,28 @@ Fragment-related states (ochre hint, gold exposed, pale gold fully-exposed) are 
 | Grid origin | `(40, 80)` | set on the `Grid` Node2D in `Main.tscn` |
 | Default `Width` × `Height` | 28 × 16 | Exported on `Grid` |
 | Default `TileSize` | 36 px | Exported on `Grid` |
-| Grid pixel extent | 1008 × 576 px | leaves ~232 px on the right for the collection panel |
+
+The grid pixel extent (`Width * TileSize` × `Height * TileSize`) is **not** clamped to the viewport. Without a camera, larger grids would extend past the visible area.
+
+### Camera (`CameraController`)
+
+`Camera2D` attached to `Main/Camera`. On `_Ready` it calls `FitGrid` and subscribes to `Viewport.SizeChanged` so the grid refits whenever the viewport resizes (project setting change, window resize). `FitGrid`:
+
+1. Computes the visible region not occupied by the HUD bar (top) or the collection panel (right): `(Margin, HudTopHeight) → (viewport.x - SidePanelWidth, viewport.y - Margin)`.
+2. Picks `zoom = min(availableW / gridW, availableH / gridH)`, clamped to `[MinZoom, MaxZoom]`.
+3. Offsets `Position` so the grid centers on the *available* region rather than the full viewport — the panel and HUD don't cover the grid.
+
+This means changing `Grid.Width`, `Grid.Height`, or `Grid.TileSize` and rerunning automatically refits the view: a 100×100 grid zooms out, a 10×10 grid zooms in. Click coordinates remain correct because `ExcavationSystem` already routes through `GetGlobalMousePosition()` when a `Camera2D` is active.
+
+The collection panel ([ai-docs/collection.md](collection.md)) reads back the grid's bounds in viewport space each frame and sticks itself to the grid's top-right corner — so changing `SidePanelWidth` here keeps the grid out of the panel's reserved column, and `PanelWidth` on the panel keeps the panel itself within that column. Keep `SidePanelWidth ≥ PanelWidth + GapFromGrid`.
+
+#### Camera tunables (exported on `CameraController`)
+
+- `GridPath` — node path to the `Grid` (defaults to `../Grid`)
+- `HudTopHeight` — vertical space reserved for HUD title/instructions (default 80)
+- `SidePanelWidth` — horizontal space reserved for the collection panel (default 220)
+- `Margin` — outer padding around the grid (default 20)
+- `MinZoom` / `MaxZoom` — clamp range for the auto-fit zoom
 
 ---
 

@@ -14,6 +14,10 @@ public partial class CollectionPanel : Control
 	[Export] public int CellSize { get; set; } = 12;
 	[Export] public int CellSpacing { get; set; } = 1;
 
+	// Layout: panel sticks to the grid's top-right corner each frame.
+	[Export] public float GapFromGrid { get; set; } = 16f;
+	[Export] public float PanelWidth { get; set; } = 204f;
+
 	private Grid? _grid;
 
 	public override void _Ready()
@@ -25,6 +29,32 @@ public partial class CollectionPanel : Control
 			return;
 		}
 		_grid.FragmentsChanged += _ => QueueRedraw();
+	}
+
+	public override void _Process(double delta)
+	{
+		FollowGrid();
+	}
+
+	// Project the grid's top-right and bottom-right corners through the active
+	// canvas transform (which accounts for the Camera2D zoom/position) and place
+	// the panel against the grid's right edge in viewport space.
+	private void FollowGrid()
+	{
+		if (_grid == null) return;
+
+		var origin = _grid.GlobalPosition;
+		float worldW = _grid.Width * _grid.TileSize;
+		float worldH = _grid.Height * _grid.TileSize;
+		var topRightWorld = origin + new Vector2(worldW, 0);
+		var bottomRightWorld = origin + new Vector2(worldW, worldH);
+
+		var canvasXform = GetViewport().GetCanvasTransform();
+		var topRightVp = canvasXform * topRightWorld;
+		var bottomRightVp = canvasXform * bottomRightWorld;
+
+		Position = new Vector2(topRightVp.X + GapFromGrid, topRightVp.Y);
+		Size = new Vector2(PanelWidth, Mathf.Max(0f, bottomRightVp.Y - topRightVp.Y));
 	}
 
 	public override void _Draw()
