@@ -21,8 +21,10 @@ public partial class Grid : Node2D
 	private int[,] _hp = new int[0, 0];
 	private Fragment?[,] _fragmentAt = new Fragment?[0, 0];
 	private List<Fragment> _fragments = new();
+	private List<Fragment> _collectedFragments = new();
 
 	public int FragmentsCollected { get; private set; }
+	public IReadOnlyList<Fragment> CollectedFragments => _collectedFragments;
 
 	public override void _Ready()
 	{
@@ -35,6 +37,8 @@ public partial class Grid : Node2D
 		_hp = new int[Width, Height];
 		_fragmentAt = new Fragment?[Width, Height];
 		_fragments = new List<Fragment>();
+		_collectedFragments = new List<Fragment>();
+		FragmentsCollected = 0;
 
 		var rng = new Random(Seed);
 
@@ -57,6 +61,7 @@ public partial class Grid : Node2D
 
 		SpawnFragments(rng, FragmentTarget);
 
+		EmitSignal(SignalName.FragmentsChanged, FragmentsCollected);
 		QueueRedraw();
 	}
 
@@ -138,6 +143,7 @@ public partial class Grid : Node2D
 
 		foreach (var c in frag.Cells) _fragmentAt[c.X, c.Y] = null;
 		_fragments.Remove(frag);
+		_collectedFragments.Add(frag);
 		FragmentsCollected++;
 		EmitSignal(SignalName.FragmentsChanged, FragmentsCollected);
 		QueueRedraw();
