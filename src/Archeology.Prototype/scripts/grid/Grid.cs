@@ -66,26 +66,18 @@ public partial class Grid : Node2D
 			(int)Math.Floor(local.Y / TileSize));
 	}
 
-	// Damage tiles in a 3x3 area. Soil clears in 1 hit, stone in 2, fragments are blockers.
-	public void DigArea(Vector2I center)
+	// Damage a single tile. Soil clears in 1 hit, stone in 2, fragments are blockers.
+	public void Dig(Vector2I cell)
 	{
-		for (int dx = -1; dx <= 1; dx++)
+		if (!InBounds(cell.X, cell.Y)) return;
+
+		var t = _types[cell.X, cell.Y];
+		if (t == TileType.Empty || t == TileType.Fragment) return;
+
+		_hp[cell.X, cell.Y]--;
+		if (_hp[cell.X, cell.Y] <= 0)
 		{
-			for (int dy = -1; dy <= 1; dy++)
-			{
-				int x = center.X + dx;
-				int y = center.Y + dy;
-				if (!InBounds(x, y)) continue;
-
-				var t = _types[x, y];
-				if (t == TileType.Empty || t == TileType.Fragment) continue;
-
-				_hp[x, y]--;
-				if (_hp[x, y] <= 0)
-				{
-					_types[x, y] = TileType.Empty;
-				}
-			}
+			_types[cell.X, cell.Y] = TileType.Empty;
 		}
 		QueueRedraw();
 	}
