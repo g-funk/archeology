@@ -120,10 +120,11 @@ Tile types:
 - stone (slower)
 
 Fragments:
-- buried under a soil or stone cover
-- clicking a fragment tile digs its cover (same speed as plain soil/stone)
-- once the cover is cleared, the fragment is exposed and can be collected with another click
-- clearing a tile next to a buried fragment surfaces a hint on the fragment tile
+- multi-tile shapes (prototype set: 2x2 square, 3x3 hollow box, plus, corner)
+- each fragment tile is buried under a soil or stone cover
+- digging a fragment tile clears its cover (same speed as plain soil/stone)
+- a fragment can only be collected once *all* its tiles are exposed; clicking any cell collects the whole fragment
+- clearing a tile next to a buried fragment tile surfaces a hint on that tile
 
 ---
 

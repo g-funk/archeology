@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 namespace Archeology.Prototype;
 
@@ -9,15 +10,17 @@ public partial class Grid : Node2D
 	[Export] public int Height { get; set; } = 16;
 	[Export] public int TileSize { get; set; } = 36;
 	[Export] public int Seed { get; set; } = 1337;
+	[Export] public int FragmentTarget { get; set; } = 6;
 
 	[Signal] public delegate void FragmentsChangedEventHandler(int count);
 
-	// _types is the *cover* at each cell: Soil, Stone, or Empty (cleared).
-	// _hasFragment is an overlay: a fragment hides under the cover.
-	// A fragment is "exposed" when its own cover is Empty.
+	// _types is the cover at each cell: Soil, Stone, or Empty (cleared).
+	// _fragmentAt is an overlay: a fragment occupies these cells (multi-tile shapes).
+	// A fragment is collectable only when *all* of its cells have Empty cover.
 	private TileType[,] _types = new TileType[0, 0];
 	private int[,] _hp = new int[0, 0];
-	private bool[,] _hasFragment = new bool[0, 0];
+	private Fragment?[,] _fragmentAt = new Fragment?[0, 0];
+	private List<Fragment> _fragments = new();
 
 	public int FragmentsCollected { get; private set; }
 
@@ -30,9 +33,11 @@ public partial class Grid : Node2D
 	{
 		_types = new TileType[Width, Height];
 		_hp = new int[Width, Height];
-		_hasFragment = new bool[Width, Height];
+		_fragmentAt = new Fragment?[Width, Height];
+		_fragments = new List<Fragment>();
 
 		var rng = new Random(Seed);
+
 		for (int x = 0; x < Width; x++)
 		{
 			for (int y = 0; y < Height; y++)
@@ -47,23 +52,51 @@ public partial class Grid : Node2D
 					_types[x, y] = TileType.Soil;
 					_hp[x, y] = 1;
 				}
-
-				if (rng.NextDouble() < 0.06)
-				{
-					_hasFragment[x, y] = true;
-				}
 			}
 		}
 
+		SpawnFragments(rng, FragmentTarget);
+
 		QueueRedraw();
+	}
+
+	private void SpawnFragments(Random rng, int target)
+	{
+		var shapes = (FragmentShape[])Enum.GetValues(typeof(FragmentShape));
+		const int maxAttempts = 500;
+		int attempts = 0;
+		while (_fragments.Count < target && attempts < maxAttempts)
+		{
+			attempts++;
+			var shape = shapes[rng.Next(shapes.Length)];
+			var template = Fragment.Template(shape);
+			int ax = rng.Next(Width);
+			int ay = rng.Next(Height);
+
+			var abs = new Vector2I[template.Count];
+			bool fits = true;
+			for (int i = 0; i < template.Count; i++)
+			{
+				int cx = ax + template[i].X;
+				int cy = ay + template[i].Y;
+				if (!InBounds(cx, cy) || _fragmentAt[cx, cy] != null)
+				{
+					fits = false;
+					break;
+				}
+				abs[i] = new Vector2I(cx, cy);
+			}
+			if (!fits) continue;
+
+			var frag = new Fragment(_fragments.Count, shape, abs);
+			_fragments.Add(frag);
+			foreach (var c in abs) _fragmentAt[c.X, c.Y] = frag;
+		}
 	}
 
 	public bool InBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
 
 	public TileType GetTile(int x, int y) => _types[x, y];
-
-	public bool HasExposedFragment(int x, int y) =>
-		InBounds(x, y) && _hasFragment[x, y] && _types[x, y] == TileType.Empty;
 
 	public Vector2I WorldToCell(Vector2 worldPosition)
 	{
@@ -74,7 +107,7 @@ public partial class Grid : Node2D
 	}
 
 	// Single entry point for a click on a cell.
-	// Collects an exposed fragment if one is there; otherwise digs the cover.
+	// Collects a fully-exposed fragment if one is there; otherwise digs the cover.
 	public void HandleClick(Vector2I cell)
 	{
 		if (TryCollectFragment(cell)) return;
@@ -98,17 +131,30 @@ public partial class Grid : Node2D
 
 	public bool TryCollectFragment(Vector2I cell)
 	{
-		if (!HasExposedFragment(cell.X, cell.Y)) return false;
+		if (!InBounds(cell.X, cell.Y)) return false;
+		var frag = _fragmentAt[cell.X, cell.Y];
+		if (frag == null) return false;
+		if (!IsFragmentFullyExposed(frag)) return false;
 
-		_hasFragment[cell.X, cell.Y] = false;
+		foreach (var c in frag.Cells) _fragmentAt[c.X, c.Y] = null;
+		_fragments.Remove(frag);
 		FragmentsCollected++;
 		EmitSignal(SignalName.FragmentsChanged, FragmentsCollected);
 		QueueRedraw();
 		return true;
 	}
 
+	private bool IsFragmentFullyExposed(Fragment frag)
+	{
+		foreach (var c in frag.Cells)
+		{
+			if (_types[c.X, c.Y] != TileType.Empty) return false;
+		}
+		return true;
+	}
+
 	// True if any 4-neighbor's cover has been cleared.
-	// Triggers the hint color on a buried fragment tile.
+	// Drives the hint color on a buried fragment cell.
 	private bool HasClearedNeighbor(int x, int y)
 	{
 		ReadOnlySpan<(int dx, int dy)> n = stackalloc (int, int)[]
@@ -143,22 +189,28 @@ public partial class Grid : Node2D
 
 	private Color ColorFor(int x, int y)
 	{
-		bool hasFrag = _hasFragment[x, y];
+		var frag = _fragmentAt[x, y];
+		bool hasFrag = frag != null;
 
 		switch (_types[x, y])
 		{
 			case TileType.Empty:
-				return hasFrag
-					// bright gold — cover cleared, fragment exposed, ready to collect
-					? new Color(1.00f, 0.82f, 0.32f)
-					// near-black brown — empty hole, nothing here
-					: new Color(0.10f, 0.08f, 0.07f);
+				if (hasFrag)
+				{
+					return IsFragmentFullyExposed(frag!)
+						// bright pale gold — whole shape is exposed, click any cell to collect
+						? new Color(1.00f, 0.92f, 0.55f)
+						// standard gold — this cell is exposed, but other cells of the same fragment still covered
+						: new Color(1.00f, 0.82f, 0.32f);
+				}
+				// near-black brown — empty hole, nothing here
+				return new Color(0.10f, 0.08f, 0.07f);
 
 			case TileType.Soil:
 				return hasFrag && HasClearedNeighbor(x, y)
-					// muted ochre — a neighbor was cleared; a fragment hides under this soil
+					// muted ochre — a neighbor was cleared; a fragment cell hides under this soil
 					? new Color(0.60f, 0.50f, 0.28f)
-					// warm earthy brown — plain soil (also camouflages buried fragments)
+					// warm earthy brown — plain soil (also camouflages buried fragment cells)
 					: new Color(0.42f, 0.30f, 0.18f);
 
 			case TileType.Stone:

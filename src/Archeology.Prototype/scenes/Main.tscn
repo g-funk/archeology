@@ -29,6 +29,6 @@ offset_left = 16.0
 offset_top = 42.0
 offset_right = 1264.0
 offset_bottom = 70.0
-text = "Click: dig one tile (soil = 1 hit, stone = 2). Ochre tiles hint at a buried fragment — dig the cover off, then click the gold tile to collect."
+text = "Click to dig (soil = 1 hit, stone = 2). Ochre tiles hint at a buried fragment cell. Fragments span multiple tiles — expose every tile of the shape (whole shape glows pale gold), then click any cell to collect."
 theme_override_colors/font_color = Color(0.78, 0.72, 0.58, 1)
 theme_override_font_sizes/font_size = 14
