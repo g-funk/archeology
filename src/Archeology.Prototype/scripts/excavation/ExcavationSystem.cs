@@ -30,13 +30,6 @@ public partial class ExcavationSystem : Node
 		var cell = _grid.WorldToCell(world);
 		if (!_grid.InBounds(cell.X, cell.Y)) return;
 
-		if (_grid.GetTile(cell.X, cell.Y) == TileType.Fragment)
-		{
-			_grid.TryCollectFragment(cell);
-		}
-		else
-		{
-			_grid.Dig(cell);
-		}
+		_grid.HandleClick(cell);
 	}
 }
