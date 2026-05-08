@@ -86,9 +86,18 @@ The player:
 
 ## 3.3 Constraints
 
-- Fragments are buried under soil or stone
-- Digging a fragment tile clears its cover; once clear, the fragment is exposed
-- Clearing a tile adjacent to a buried fragment surfaces a hint on the fragment tile
+- Fragments occupy multiple tiles arranged in a shape
+- Each fragment tile is buried under soil or stone
+- Digging a fragment tile clears its cover (same speed as plain soil/stone)
+- A fragment can only be collected once *all* its tiles are exposed
+- Clearing a tile adjacent to a buried fragment tile surfaces a hint on that tile
+
+### Prototype shapes
+
+- 2x2 square (4 tiles)
+- 3x3 hollow box (8 tiles, empty middle)
+- Plus (5 tiles)
+- Corner (5 tiles inside a 3x3)
 
 ---
 
