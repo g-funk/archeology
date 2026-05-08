@@ -40,6 +40,17 @@ If user requests changes that conflict or modfify instructions in CLAUDE.md, upd
 
 ---
 
+# Implementation Reference (ai-docs/)
+
+`ai-docs/` contains one document per implemented feature describing the current code: file paths, data model, behavior, tunables, and cross-feature seams. Read the relevant doc before changing a feature, and update it when the implementation changes.
+
+- [ai-docs/excavation.md](ai-docs/excavation.md) — dig mechanic, tile types, click flow
+- [ai-docs/collection.md](ai-docs/collection.md) — multi-tile fragments, full-exposure rule, side panel UI
+
+When adding a new feature, create `ai-docs/<feature>.md` and link it from this list and from any related ai-docs file.
+
+---
+
 # Solution Structure
 
 Archeology/

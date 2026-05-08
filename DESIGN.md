@@ -3,6 +3,10 @@
 **Version:** 0.1  
 **Author:** You (+ ChatGPT sparring)
 
+> **Implementation status:** see [ai-docs/](ai-docs/) for per-feature documentation of what is currently built.
+> - [ai-docs/excavation.md](ai-docs/excavation.md) — §3 Excavation System
+> - [ai-docs/collection.md](ai-docs/collection.md) — §3.3 multi-tile rules + §4 Artifact System (fragment portion)
+
 ---
 
 # 1. Overview
