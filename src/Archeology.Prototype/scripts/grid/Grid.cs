@@ -186,8 +186,8 @@ public partial class Grid : Node2D
 				var rect = new Rect2(
 					x * TileSize,
 					y * TileSize,
-					TileSize - 1,
-					TileSize - 1);
+					TileSize,
+					TileSize);
 				DrawRect(rect, ColorFor(x, y));
 			}
 		}

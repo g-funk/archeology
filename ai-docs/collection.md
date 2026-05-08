@@ -96,7 +96,11 @@ Clicking a partial-exposed fragment cell is a no-op (the click silently does not
 
 ## Side panel UI (`CollectionPanel`)
 
-- **Node:** `Control` under `HUD/CollectionPanel` in `Main.tscn`, positioned at `(1060, 80) → (1264, 656)`.
+- **Node:** `Control` under `HUD/CollectionPanel` in `Main.tscn`. Initial offsets in the scene are placeholders — the script repositions the panel every frame.
+- **Anchoring to the grid:** in `_Process`, `FollowGrid()` projects the grid's top-right and bottom-right corners through `Viewport.GetCanvasTransform()` (which accounts for `Camera2D` zoom/position) and sets:
+  - `Position = (gridTopRight.viewportX + GapFromGrid, gridTopRight.viewportY)`
+  - `Size = (PanelWidth, gridBottomRight.viewportY - gridTopRight.viewportY)`
+  This makes the panel stick to the grid's top-right corner and match its visible height regardless of viewport size, camera zoom, or grid dimensions.
 - **Hookup:** subscribes to `Grid.FragmentsChanged` and calls `QueueRedraw` on every emit.
 - **Drawing:**
   - Background fill (slightly lighter than the page) over the whole panel.
@@ -115,7 +119,11 @@ Clicking a partial-exposed fragment cell is a no-op (the click silently does not
 - `SlotSpacing` — gap between slots
 - `CellSize` — size of one fragment-cell square inside the slot
 - `CellSpacing` — gap between fragment cells
+- `GapFromGrid` — pixel gap between the grid's right edge and the panel's left edge
+- `PanelWidth` — fixed width of the panel in viewport pixels
 - `GridPath` — node path to the `Grid` (defaults to `../../Grid`)
+
+> **Layout coupling:** the camera's `SidePanelWidth` (in `CameraController`) reserves space on the right that the grid won't extend into. Keep `SidePanelWidth ≥ PanelWidth + GapFromGrid` so the panel doesn't overlap the grid. See [ai-docs/excavation.md](excavation.md#camera-cameracontroller).
 
 ---
 

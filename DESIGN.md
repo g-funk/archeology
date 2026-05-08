@@ -33,7 +33,7 @@ The player:
 
 ## 1.3 Platform & Scope
 
-- **Platform:** Mobile (primary), potentially desktop later
+- **Platform:** Desktop, Steam
 - **Mode:** Single-player with async social features
 - **Session Length:** 1–15 minutes typical
 
@@ -41,7 +41,7 @@ The player:
 
 # 2. Core Gameplay Loop
 
-## 2.1 Short Loop (1–3 minutes)
+## 2.1 Short Loop (a few minutes)
 
 1. Player digs tiles
 2. Reveals:
@@ -63,7 +63,7 @@ The player:
 
 ---
 
-## 2.3 Long Loop (multi-session)
+## 2.3 Long Loop
 
 - Complete artifacts
 - Refine interpretations
