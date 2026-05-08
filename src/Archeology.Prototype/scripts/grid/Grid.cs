@@ -140,18 +140,25 @@ public partial class Grid : Node2D
         switch (_types[x, y])
         {
             case TileType.Empty:
+                // near-black brown — a dug-out hole
                 return new Color(0.10f, 0.08f, 0.07f);
             case TileType.Soil:
+                // warm earthy brown — easy-to-dig dirt
                 return new Color(0.42f, 0.30f, 0.18f);
             case TileType.Stone:
                 return _hp[x, y] >= 2
+                    // dark slate gray — undamaged stone
                     ? new Color(0.42f, 0.42f, 0.48f)
+                    // light slate gray — cracked/damaged stone (1 hp left)
                     : new Color(0.58f, 0.58f, 0.64f);
             case TileType.Fragment:
                 return IsExposed(x, y)
+                    // bright gold — fragment with a cleared neighbor, ready to collect
                     ? new Color(1.00f, 0.82f, 0.32f)
+                    // muted ochre — fragment still buried (visible only as a hint)
                     : new Color(0.60f, 0.50f, 0.28f);
             default:
+                // magenta — error/unhandled case sentinel
                 return Colors.Magenta;
         }
     }
