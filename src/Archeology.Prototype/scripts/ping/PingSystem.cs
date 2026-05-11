@@ -57,8 +57,12 @@ public partial class PingSystem : Node2D
 			return;
 		}
 
-		if (TryFindClosestFragmentCell(digX, digY, digDepth, out int fx, out int fy, out float distance))
+		if (TryFindClosestFragmentCell(digX, digY, digDepth, out int fx, out int fy, out int fragDepth, out float distance))
 		{
+			// Skip the ping entirely if the closest fragment cell is already
+			// exposed — the player can see it on the floor, no need to hint.
+			if (_grid.GetDepth(fx, fy) == fragDepth) return;
+
 			// Linear falloff: closer = brighter.
 			float falloff = 1f - (distance / PingRadius);
 			float brightness = PingPeakBrightness * falloff;
@@ -70,9 +74,10 @@ public partial class PingSystem : Node2D
 		}
 	}
 
-	private bool TryFindClosestFragmentCell(int digX, int digY, int digDepth, out int fx, out int fy, out float bestDistance)
+	private bool TryFindClosestFragmentCell(int digX, int digY, int digDepth, out int fx, out int fy, out int fragDepth, out float bestDistance)
 	{
 		fx = fy = 0;
+		fragDepth = 0;
 		bestDistance = float.MaxValue;
 		if (_grid == null) return false;
 
@@ -89,6 +94,7 @@ public partial class PingSystem : Node2D
 					bestDistance = d;
 					fx = c.X;
 					fy = c.Y;
+					fragDepth = frag.Depth;
 				}
 			}
 		}
