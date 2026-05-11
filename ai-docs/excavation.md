@@ -109,8 +109,10 @@ Fragment-related states (ochre hint, gold exposed, pale gold fully-exposed) are 
 
 | Side | Color | Notes |
 |---|---|---|
-| Right, Bottom | strong dark `(0.04, 0.03, 0.02)` | emphasised — design/VISUALS.md "more visible" |
-| Top, Left | light dark `(0.12, 0.10, 0.08)` | de-emphasised |
+| Top, Left | dark shadow `(0.04, 0.03, 0.02)` | near edge of the pit, in shadow |
+| Right, Bottom | bright highlight `(0.75, 0.75, 0.73)` | far edge of the pit, catching light |
+
+The dark-near / bright-far pairing makes a deeper tile read as a recessed pit.
 
 Wall thickness is `max(2, TileSize / 8)`. No gradient is applied yet — a single flat color per wall.
 

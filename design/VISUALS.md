@@ -17,14 +17,15 @@ For each tile:
 
 ### Visibility
 
-- Bottom and right edges should be visually stronger (more visible)
-- Top and left edges can be slightly lighter or partially hidden
+- Top and left walls are dark (shadowed near edge of the pit)
+- Bottom and right walls are bright (far edge catching light)
+- The dark-near / bright-far pairing makes a deeper tile read as a recessed pit
 
 ### Appearance
 
-- Walls should be darker than the floor
-- Add a subtle vertical gradient (lighter at top, darker at bottom)
-- Keep style simple and consistent
+- Top/left shadow walls: near-black, much darker than the surrounding floor
+- Bottom/right highlight walls: a near-neutral light gray, noticeably brighter than the surrounding floor
+- Keep style simple and consistent (a subtle vertical gradient may be added later)
 
 ---
 
@@ -43,5 +44,5 @@ depth 3+ → 0.70
 
 - Walls mark depth differences
 - Only draw walls where depth changes
-- Emphasize bottom/right edges for clarity
-- Use subtle darkening to support the effect
+- Top/left walls dark, bottom/right walls bright (deeper tiles read as pits)
+- Use subtle floor darkening to reinforce depth
