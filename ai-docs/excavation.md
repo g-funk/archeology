@@ -1,8 +1,9 @@
 # Excavation
 
-The dig mechanic — the player clicks tiles in a 2D grid; each click damages a tile's cover until it clears.
+The dig mechanic — the player clicks tiles in a 2D grid; each click drains the current layer's HP, and when the layer clears the tile drops to the next depth. The world is layered; players must terrace down step by step.
 
 > **Design source:** `DESIGN.md` §3 Excavation System
+> **Visual rules:** `VISUALS.md` (floor darkening, walls between depth steps)
 > **Process rules:** `CLAUDE.md` "Excavation System"
 > **Layered feature:** [ai-docs/collection.md](collection.md) — fragments are an overlay on top of this grid
 
@@ -13,27 +14,43 @@ The dig mechanic — the player clicks tiles in a 2D grid; each click damages a 
 | Path | Role |
 |---|---|
 | `src/Archeology.Prototype/scripts/grid/TileType.cs` | `TileType` enum: `Empty`, `Soil`, `Stone` |
-| `src/Archeology.Prototype/scripts/grid/Grid.cs` | Terrain grid, dig logic, drawing |
+| `src/Archeology.Prototype/scripts/grid/Grid.cs` | Layered terrain, dig logic, drawing (floors + walls) |
 | `src/Archeology.Prototype/scripts/excavation/ExcavationSystem.cs` | Mouse input → forwards to `Grid.HandleClick` |
 | `src/Archeology.Prototype/scripts/player/CameraController.cs` | `Camera2D` that auto-fits the grid into the visible region |
 | `src/Archeology.Prototype/scenes/Main.tscn` | Grid (Node2D) + ExcavationSystem (Node) + Camera (Camera2D) |
 
 ---
 
-## Tile model
+## Layered tile model
 
-Each cell in the grid has:
+Each cell carries a stack of layers plus a single "current depth" pointer:
 
-- `TileType _types[x, y]` — the cover type (`Soil`, `Stone`, or `Empty` once cleared)
-- `int _hp[x, y]` — remaining hit points of the cover
+- `TileType _layerTypes[x, y, d]` — material at depth `d`
+- `int _layerHp[x, y, d]` — HP of the material at depth `d`
+- `int _depth[x, y]` — depth currently visible at this tile
 
-| Cover | Initial HP | Clears in |
+Depths range over `[0, LayerCount)`. Once `_depth == LayerCount` the tile is **bedrock** — no more material remains.
+
+| Material | Initial HP | Clears in |
 |---|---|---|
 | `Soil` | 1 | 1 dig |
 | `Stone` | 2 | 2 digs |
-| `Empty` | — | already cleared |
 
-Stone visibly cracks at 1 HP (lighter slate gray) before clearing.
+Material distribution is identical at every depth (~32% stone, ~68% soil), rolled once per `(x, y, d)` at generation time. Stone visibly cracks at 1 HP (lighter slate gray) before clearing.
+
+---
+
+## Step constraint ("one deeper than surrounds")
+
+A tile may **advance depth** only when every in-bound 4-neighbor is already at depth ≥ this tile's current depth. Out-of-bounds neighbors don't constrain.
+
+`Grid.CanDigDeeper(x, y)`:
+
+```
+return all 4-neighbors n: !InBounds(n) || _depth[n] >= _depth[x, y]
+```
+
+If this check fails, `Dig(cell)` is a silent no-op — the player must dig surrounding tiles down first. This forces terraced excavation: a deeper "pit" can only be one step lower than its rim.
 
 ---
 
@@ -44,44 +61,57 @@ mouse click
   └─> ExcavationSystem._UnhandledInput
         └─> Grid.HandleClick(cell)
               ├─> Grid.TryCollectFragment(cell)   ← see ai-docs/collection.md
-              │     (returns true if a fragment was collected → done)
-              └─> Grid.Dig(cell)                  ← if no fragment was collected
-                    - returns immediately if cell is Empty
-                    - decrements _hp[cell]
-                    - sets _types[cell] = Empty when _hp ≤ 0
+              │     (handles the case where a fragment cell is exposed at this tile's depth)
+              └─> Grid.Dig(cell)                  ← otherwise
+                    - returns if cell is at bedrock
+                    - returns if CanDigDeeper is false (step constraint blocks)
+                    - decrements _layerHp[x, y, _depth[x, y]]
+                    - increments _depth[x, y] when HP drains
 ```
 
-`HandleClick` is the single entry point. The fragment-collection branch lives in `Grid.TryCollectFragment` and is documented in [ai-docs/collection.md](collection.md). When no fragment is collected, the click falls through to `Dig`.
-
----
-
-## Generation
-
-`Grid.Generate()` allocates the arrays and fills the terrain via a seeded `Random`:
-
-| Outcome | Probability |
-|---|---|
-| `Stone` (HP 2) | 32% |
-| `Soil` (HP 1) | 68% |
-
-Then `SpawnFragments` overlays multi-tile fragments on top — see [ai-docs/collection.md](collection.md).
-
-The same seed always produces the same map, so iteration is reproducible.
+`HandleClick` is the single entry point. The fragment-collection branch is in `Grid.TryCollectFragment` — see [ai-docs/collection.md](collection.md).
 
 ---
 
 ## Rendering
 
-`Grid._Draw` redraws the entire grid every time `QueueRedraw` is invoked (after every dig / collection). For each cell, `ColorFor(x, y)` picks a color from the table below.
+`Grid._Draw` paints in two passes:
+
+1. **Floors** — one `Rect2` per tile via `FloorColorFor(x, y)`.
+2. **Walls** — per-tile, on the deeper-than-neighbor edges.
+
+### Floor colors
+
+`FloorColorFor` picks a base color and applies a depth-darkening factor from VISUALS.md:
+
+| `_depth[x, y]` | Multiplier |
+|---|---|
+| 0 | 1.00 |
+| 1 | 0.85 |
+| 2 | 0.75 |
+| 3+ | 0.70 |
+
+Base colors before darkening:
 
 | State | Color |
 |---|---|
-| `Empty`, no fragment overlay | near-black brown `(0.10, 0.08, 0.07)` |
-| `Soil`, no hint | warm earthy brown `(0.42, 0.30, 0.18)` |
-| `Stone` full HP | dark slate gray `(0.42, 0.42, 0.48)` |
-| `Stone` cracked (1 HP) | light slate gray `(0.58, 0.58, 0.64)` |
+| Bedrock (`d == LayerCount`) | near-black `(0.05, 0.04, 0.03)` (no darkening applied) |
+| Soil | warm earthy brown `(0.42, 0.30, 0.18)` |
+| Stone full HP | dark slate gray `(0.42, 0.42, 0.48)` |
+| Stone cracked (1 HP) | light slate gray `(0.58, 0.58, 0.64)` |
 
 Fragment-related states (ochre hint, gold exposed, pale gold fully-exposed) are documented in [ai-docs/collection.md](collection.md).
+
+### Walls
+
+`DrawWalls()` per VISUALS.md: for each tile, for each of the 4 sides, if this tile is **strictly deeper** than the neighbor on that side, paint a wall on this tile's edge.
+
+| Side | Color | Notes |
+|---|---|---|
+| Right, Bottom | strong dark `(0.04, 0.03, 0.02)` | emphasised — VISUALS.md "more visible" |
+| Top, Left | light dark `(0.12, 0.10, 0.08)` | de-emphasised |
+
+Wall thickness is `max(2, TileSize / 8)`. No gradient is applied yet — a single flat color per wall.
 
 ---
 
@@ -93,8 +123,9 @@ Fragment-related states (ochre hint, gold exposed, pale gold fully-exposed) are 
 | Grid origin | `(40, 80)` | set on the `Grid` Node2D in `Main.tscn` |
 | Default `Width` × `Height` | 28 × 16 | Exported on `Grid` |
 | Default `TileSize` | 36 px | Exported on `Grid` |
+| Default `LayerCount` | 4 | Exported on `Grid` — depths 0..3 plus bedrock |
 
-The grid pixel extent (`Width * TileSize` × `Height * TileSize`) is **not** clamped to the viewport. Without a camera, larger grids would extend past the visible area.
+The grid pixel extent (`Width * TileSize` × `Height * TileSize`) is **not** clamped to the viewport — the camera handles fitting.
 
 ### Camera (`CameraController`)
 
@@ -104,7 +135,7 @@ The grid pixel extent (`Width * TileSize` × `Height * TileSize`) is **not** cla
 2. Picks `zoom = min(availableW / gridW, availableH / gridH)`, clamped to `[MinZoom, MaxZoom]`.
 3. Offsets `Position` so the grid centers on the *available* region rather than the full viewport — the panel and HUD don't cover the grid.
 
-This means changing `Grid.Width`, `Grid.Height`, or `Grid.TileSize` and rerunning automatically refits the view: a 100×100 grid zooms out, a 10×10 grid zooms in. Click coordinates remain correct because `ExcavationSystem` already routes through `GetGlobalMousePosition()` when a `Camera2D` is active.
+Changing `Grid.Width`, `Grid.Height`, or `Grid.TileSize` and rerunning automatically refits the view. Click coordinates remain correct because `ExcavationSystem` already routes through `GetGlobalMousePosition()` when a `Camera2D` is active.
 
 The collection panel ([ai-docs/collection.md](collection.md)) reads back the grid's bounds in viewport space each frame and sticks itself to the grid's top-right corner — so changing `SidePanelWidth` here keeps the grid out of the panel's reserved column, and `PanelWidth` on the panel keeps the panel itself within that column. Keep `SidePanelWidth ≥ PanelWidth + GapFromGrid`.
 
@@ -125,12 +156,13 @@ The collection panel ([ai-docs/collection.md](collection.md)) reads back the gri
 - `TileSize` — pixel size of one tile
 - `Seed` — RNG seed (terrain + fragment placement)
 - `FragmentTarget` — see [ai-docs/collection.md](collection.md)
+- `LayerCount` — number of dig-able layers; depths go `0..LayerCount-1`, then bedrock at `LayerCount`
 
 ---
 
 ## Out of scope (for this feature)
 
-- Multiple depth layers (`DESIGN.md` §3.1 mentions 5–20 layers — prototype is single-layer)
+- Wall vertical gradients (VISUALS.md mentions "lighter at top, darker at bottom" — currently flat)
 - Material variations beyond soil/stone
 - Tools / dig-radius modifiers
 - Animation on dig

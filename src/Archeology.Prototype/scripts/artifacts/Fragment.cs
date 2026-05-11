@@ -16,12 +16,16 @@ public class Fragment
 {
 	public int Id { get; }
 	public FragmentShape Shape { get; }
+	// Layer the whole shape lives on. All cells share the same depth.
+	// Always > 0 — fragments are never on the topmost layer.
+	public int Depth { get; }
 	public IReadOnlyList<Vector2I> Cells { get; }
 
-	public Fragment(int id, FragmentShape shape, IReadOnlyList<Vector2I> cells)
+	public Fragment(int id, FragmentShape shape, int depth, IReadOnlyList<Vector2I> cells)
 	{
 		Id = id;
 		Shape = shape;
+		Depth = depth;
 		Cells = cells;
 	}
 
