@@ -16,6 +16,9 @@ public partial class Grid : Node2D
 	[Export] public int LayerCount { get; set; } = 4;
 
 	[Signal] public delegate void FragmentsChangedEventHandler(int count);
+	// Fires when a click results in a successful dig action (HP damaged on the
+	// current layer). Used by the ping system to surface nearby fragments.
+	[Signal] public delegate void DugEventHandler(int x, int y, int depth);
 
 	// Layered world model:
 	//   _layerTypes[x, y, d]  — material at depth d
@@ -32,6 +35,7 @@ public partial class Grid : Node2D
 
 	public int FragmentsCollected { get; private set; }
 	public IReadOnlyList<Fragment> CollectedFragments => _collectedFragments;
+	public IReadOnlyList<Fragment> Fragments => _fragments;
 
 	public override void _Ready()
 	{
@@ -155,6 +159,7 @@ public partial class Grid : Node2D
 		if (!CanDigDeeper(cell.X, cell.Y)) return; // step constraint blocks this dig
 
 		_layerHp[cell.X, cell.Y, d]--;
+		EmitSignal(SignalName.Dug, cell.X, cell.Y, d);
 		if (_layerHp[cell.X, cell.Y, d] <= 0)
 		{
 			_depth[cell.X, cell.Y] = d + 1;
