@@ -2,8 +2,8 @@
 
 The dig mechanic — the player clicks tiles in a 2D grid; each click drains the current layer's HP, and when the layer clears the tile drops to the next depth. The world is layered; players must terrace down step by step.
 
-> **Design source:** `DESIGN.md` §3 Excavation System
-> **Visual rules:** `VISUALS.md` (floor darkening, walls between depth steps)
+> **Design source:** `design/DESIGN.md` §3 Excavation System
+> **Visual rules:** `design/VISUALS.md` (floor darkening, walls between depth steps)
 > **Process rules:** `CLAUDE.md` "Excavation System"
 > **Layered feature:** [ai-docs/collection.md](collection.md) — fragments are an overlay on top of this grid
 
@@ -82,7 +82,7 @@ mouse click
 
 ### Floor colors
 
-`FloorColorFor` picks a base color and applies a depth-darkening factor from VISUALS.md:
+`FloorColorFor` picks a base color and applies a depth-darkening factor from design/VISUALS.md:
 
 | `_depth[x, y]` | Multiplier |
 |---|---|
@@ -104,11 +104,11 @@ Fragment-related states (ochre hint, gold exposed, pale gold fully-exposed) are 
 
 ### Walls
 
-`DrawWalls()` per VISUALS.md: for each tile, for each of the 4 sides, if this tile is **strictly deeper** than the neighbor on that side, paint a wall on this tile's edge.
+`DrawWalls()` per design/VISUALS.md: for each tile, for each of the 4 sides, if this tile is **strictly deeper** than the neighbor on that side, paint a wall on this tile's edge.
 
 | Side | Color | Notes |
 |---|---|---|
-| Right, Bottom | strong dark `(0.04, 0.03, 0.02)` | emphasised — VISUALS.md "more visible" |
+| Right, Bottom | strong dark `(0.04, 0.03, 0.02)` | emphasised — design/VISUALS.md "more visible" |
 | Top, Left | light dark `(0.12, 0.10, 0.08)` | de-emphasised |
 
 Wall thickness is `max(2, TileSize / 8)`. No gradient is applied yet — a single flat color per wall.
@@ -162,7 +162,7 @@ The collection panel ([ai-docs/collection.md](collection.md)) reads back the gri
 
 ## Out of scope (for this feature)
 
-- Wall vertical gradients (VISUALS.md mentions "lighter at top, darker at bottom" — currently flat)
+- Wall vertical gradients (design/VISUALS.md mentions "lighter at top, darker at bottom" — currently flat)
 - Material variations beyond soil/stone
 - Tools / dig-radius modifiers
 - Animation on dig
