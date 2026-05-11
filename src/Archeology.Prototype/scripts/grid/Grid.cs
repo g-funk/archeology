@@ -343,10 +343,13 @@ public partial class Grid : Node2D
 		int nd = _depth[nx, ny];
 		if (d <= nd) return;
 
-		var strong = new Color(0.04f, 0.03f, 0.02f);
-		var light = new Color(0.12f, 0.10f, 0.08f);
-		bool emphasised = side == Side.Right || side == Side.Bottom;
-		var color = emphasised ? strong : light;
+		// Top/left walls are shadowed and bottom/right walls are highlighted —
+		// the deeper tile reads as a pit with the bright wall catching light at
+		// its far edges.
+		var shadow = new Color(0.04f, 0.03f, 0.02f);
+		var highlight = new Color(0.75f, 0.75f, 0.73f);
+		bool isHighlight = side == Side.Right || side == Side.Bottom;
+		var color = isHighlight ? highlight : shadow;
 
 		Rect2 rect = side switch
 		{
