@@ -10,7 +10,7 @@ You are acting as a senior C# / Godot software engineer.
 
 Your primary goal is:
 
-Build a playable gameplay prototype that validates the core loop defined in DESIGN.md.
+Build a playable gameplay prototype that validates the core loop defined in design/DESIGN.md.
 
 Focus on:
 - Fast iteration
@@ -26,16 +26,16 @@ Avoid:
 
 # Design Reference
 
-The game design is defined in DESIGN.md.
+The game design is defined in design/DESIGN.md.
 
-- DESIGN.md defines what to build
+- design/DESIGN.md defines what to build
 - CLAUDE.md defines how to build it
 
 If there is a conflict:
-- Follow DESIGN.md for gameplay decisions
+- Follow design/DESIGN.md for gameplay decisions
 - Follow CLAUDE.md for structure and implementation
 
-If user requests changes to design, update DESIGN.md accordingly. 
+If user requests changes to design, update design/DESIGN.md accordingly. 
 If user requests changes that conflict or modfify instructions in CLAUDE.md, update the document
 
 ---
@@ -56,7 +56,13 @@ When adding a new feature, create `ai-docs/<feature>.md` and link it from this l
 Archeology/
 ├── Archeology.sln
 ├── CLAUDE.md
-├── DESIGN.md
+├── README.md
+├── design/
+│   ├── DESIGN.md
+│   └── VISUALS.md
+├── ai-docs/
+│   ├── excavation.md
+│   └── collection.md
 ├── src/
 │   ├── Archeology.Server/
 │   ├── Archeology.Client/
@@ -126,7 +132,7 @@ The prototype must validate the core gameplay loop:
 - Layered world: each tile has a stack of layers; `LayerCount` is configurable (default 4)
 - Each dig action targets a single tile
 - A tile can be dug only when its in-bound 4-neighbors are all at depth ≥ this tile's current depth — the tile can never be more than one layer deeper than its surroundings
-- Depth advances when the current layer's HP drains to zero; visual cues per VISUALS.md (floor darkens with depth, walls drawn between tiles of different depth)
+- Depth advances when the current layer's HP drains to zero; visual cues per design/VISUALS.md (floor darkens with depth, walls drawn between tiles of different depth)
 
 Tile types (per layer):
 - soil (fast)

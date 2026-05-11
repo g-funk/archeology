@@ -2,4 +2,4 @@
 
 Game 
 
-Design: DESIGN.md
+Design: design/DESIGN.md

@@ -2,7 +2,7 @@
 
 Fragments are multi-tile shapes hidden beneath the dig grid. The player digs to expose them, and once an entire shape is exposed, clicking any of its cells collects the fragment into a side panel.
 
-> **Design source:** `DESIGN.md` §3.3 Constraints (multi-tile rules) + §4 Artifact System
+> **Design source:** `design/DESIGN.md` §3.3 Constraints (multi-tile rules) + §4 Artifact System
 > **Process rules:** `CLAUDE.md` "Fragments"
 > **Underlying mechanic:** [ai-docs/excavation.md](excavation.md) — the dig system this is layered on
 
@@ -148,7 +148,7 @@ This feature sits on top of [ai-docs/excavation.md](excavation.md):
 
 - Player interpretation / labels (CLAUDE.md step 7)
 - Fragment matching hints (CLAUDE.md step 8)
-- Artifact grouping (multiple fragments composing one artifact, `DESIGN.md` §4.1)
+- Artifact grouping (multiple fragments composing one artifact, `design/DESIGN.md` §4.1)
 - Semantic tags / hidden meaning
 - Persistence across sessions
 
