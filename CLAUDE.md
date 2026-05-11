@@ -47,6 +47,8 @@ If user requests changes that conflict or modfify instructions in CLAUDE.md, upd
 - [ai-docs/excavation.md](ai-docs/excavation.md) — dig mechanic, tile types, click flow
 - [ai-docs/collection.md](ai-docs/collection.md) — multi-tile fragments, full-exposure rule, side panel UI
 - [ai-docs/ping.md](ai-docs/ping.md) — dig-triggered flash near the closest fragment, configurable radius/brightness/fade
+- [ai-docs/hints.md](ai-docs/hints.md) — red flash on the preventing neighbours when a dig is blocked by the step constraint
+- [ai-docs/random_collapse.md](ai-docs/random_collapse.md) — 0..N neighbours collapse alongside each successful dig, subject to the same "cannot dig" rules
 
 When adding a new feature, create `ai-docs/<feature>.md` and link it from this list and from any related ai-docs file.
 
