@@ -66,10 +66,11 @@ mouse click
                     - returns if cell is at bedrock
                     - returns if CanDigDeeper is false (step constraint blocks)
                     - decrements _layerHp[x, y, _depth[x, y]]
+                    - emits `Dug(x, y, depth)` after the decrement
                     - increments _depth[x, y] when HP drains
 ```
 
-`HandleClick` is the single entry point. The fragment-collection branch is in `Grid.TryCollectFragment` — see [ai-docs/collection.md](collection.md).
+`HandleClick` is the single entry point. The fragment-collection branch is in `Grid.TryCollectFragment` — see [ai-docs/collection.md](collection.md). The `Dug` signal feeds the ping system — see [ai-docs/ping.md](ping.md).
 
 ---
 
