@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://b0tbhjscomwu" path="res://scripts/ui/CollectionPanel.cs" id="3_panel"]
 [ext_resource type="Script" uid="uid://bvhleaovejbgc" path="res://scripts/player/CameraController.cs" id="4_camera"]
 [ext_resource type="Script" path="res://scripts/ping/PingSystem.cs" id="5_ping"]
+[ext_resource type="Script" path="res://scripts/hints/HintsSystem.cs" id="6_hints"]
 
 [node name="Main" type="Node2D" unique_id=1950256312]
 
@@ -17,6 +18,10 @@ TileSize = 30
 
 [node name="PingSystem" type="Node2D" parent="Grid"]
 script = ExtResource("5_ping")
+GridPath = NodePath("..")
+
+[node name="HintsSystem" type="Node2D" parent="Grid"]
+script = ExtResource("6_hints")
 GridPath = NodePath("..")
 
 [node name="ExcavationSystem" type="Node" parent="." unique_id=570293015]

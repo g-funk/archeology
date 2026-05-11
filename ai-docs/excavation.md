@@ -50,7 +50,7 @@ A tile may **advance depth** only when every in-bound 4-neighbor is already at d
 return all 4-neighbors n: !InBounds(n) || _depth[n] >= _depth[x, y]
 ```
 
-If this check fails, `Dig(cell)` is a silent no-op — the player must dig surrounding tiles down first. This forces terraced excavation: a deeper "pit" can only be one step lower than its rim.
+If this check fails, `Dig(cell)` emits `DigBlocked(x, y)` and returns — the player must dig surrounding tiles down first. This forces terraced excavation: a deeper "pit" can only be one step lower than its rim. The blocked signal feeds the hint flash — see [ai-docs/hints.md](hints.md).
 
 ---
 
@@ -68,9 +68,10 @@ mouse click
                     - decrements _layerHp[x, y, _depth[x, y]]
                     - emits `Dug(x, y, depth)` after the decrement
                     - increments _depth[x, y] when HP drains
+                    - rolls random collapse on 4-neighbors (see ai-docs/random_collapse.md)
 ```
 
-`HandleClick` is the single entry point. The fragment-collection branch is in `Grid.TryCollectFragment` — see [ai-docs/collection.md](collection.md). The `Dug` signal feeds the ping system — see [ai-docs/ping.md](ping.md).
+`HandleClick` is the single entry point. The fragment-collection branch is in `Grid.TryCollectFragment` — see [ai-docs/collection.md](collection.md). The `Dug` signal feeds the ping system — see [ai-docs/ping.md](ping.md). After every successful dig, neighbors may also collapse — see [ai-docs/random_collapse.md](random_collapse.md).
 
 ---
 

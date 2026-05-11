@@ -14,11 +14,19 @@ public partial class Grid : Node2D
 	// Number of dig-able layers. Depths range over [0, LayerCount); reaching
 	// LayerCount means the tile has been dug past all material (bedrock).
 	[Export] public int LayerCount { get; set; } = 4;
+	// Random collapse: 0..MaxCollapse neighbors of the dug tile may also have
+	// their current layer disappear, with `CollapseChance` per neighbor.
+	[Export] public int MaxCollapse { get; set; } = 2;
+	[Export] public float CollapseChance { get; set; } = 0.15f;
 
 	[Signal] public delegate void FragmentsChangedEventHandler(int count);
 	// Fires when a click results in a successful dig action (HP damaged on the
 	// current layer). Used by the ping system to surface nearby fragments.
 	[Signal] public delegate void DugEventHandler(int x, int y, int depth);
+	// Fires when a dig attempt is rejected by the step constraint (some neighbor
+	// is shallower than this tile). Used by the hints system to flash the
+	// preventing neighbor(s).
+	[Signal] public delegate void DigBlockedEventHandler(int x, int y);
 
 	// Layered world model:
 	//   _layerTypes[x, y, d]  — material at depth d
@@ -32,6 +40,10 @@ public partial class Grid : Node2D
 
 	private List<Fragment> _fragments = new();
 	private List<Fragment> _collectedFragments = new();
+
+	// Persistent RNG; seeded from `Seed` in Generate so terrain, fragment
+	// placement, and runtime random collapses are all reproducible per seed.
+	private Random _rng = new();
 
 	public int FragmentsCollected { get; private set; }
 	public IReadOnlyList<Fragment> CollectedFragments => _collectedFragments;
@@ -52,7 +64,7 @@ public partial class Grid : Node2D
 		_collectedFragments = new List<Fragment>();
 		FragmentsCollected = 0;
 
-		var rng = new Random(Seed);
+		_rng = new Random(Seed);
 
 		// Lay down terrain at every (x, y, depth).
 		for (int x = 0; x < Width; x++)
@@ -61,7 +73,7 @@ public partial class Grid : Node2D
 			{
 				for (int d = 0; d < LayerCount; d++)
 				{
-					if (rng.NextDouble() < 0.32)
+					if (_rng.NextDouble() < 0.32)
 					{
 						_layerTypes[x, y, d] = TileType.Stone;
 						_layerHp[x, y, d] = 2;
@@ -75,7 +87,7 @@ public partial class Grid : Node2D
 			}
 		}
 
-		SpawnFragments(rng, FragmentTarget);
+		SpawnFragments(_rng, FragmentTarget);
 
 		EmitSignal(SignalName.FragmentsChanged, FragmentsCollected);
 		QueueRedraw();
@@ -156,7 +168,11 @@ public partial class Grid : Node2D
 		if (!InBounds(cell.X, cell.Y)) return;
 		int d = _depth[cell.X, cell.Y];
 		if (d >= LayerCount) return; // bedrock: no material left
-		if (!CanDigDeeper(cell.X, cell.Y)) return; // step constraint blocks this dig
+		if (!CanDigDeeper(cell.X, cell.Y))
+		{
+			EmitSignal(SignalName.DigBlocked, cell.X, cell.Y);
+			return; // step constraint blocks this dig
+		}
 
 		_layerHp[cell.X, cell.Y, d]--;
 		EmitSignal(SignalName.Dug, cell.X, cell.Y, d);
@@ -164,7 +180,55 @@ public partial class Grid : Node2D
 		{
 			_depth[cell.X, cell.Y] = d + 1;
 		}
+		TryRandomCollapse(cell.X, cell.Y);
 		QueueRedraw();
+	}
+
+	// Each successful dig may take 0..MaxCollapse neighbors with it. Each
+	// in-bound 4-neighbor is rolled independently against CollapseChance, and
+	// each successful roll has to pass the same "cannot dig" rules as a manual
+	// dig (step constraint, bedrock, fragment block) before its current layer
+	// is removed. Directions are shuffled so we don't bias by iteration order
+	// when the MaxCollapse cap kicks in.
+	private void TryRandomCollapse(int x, int y)
+	{
+		if (MaxCollapse <= 0 || CollapseChance <= 0f) return;
+
+		Span<Vector2I> dirs = stackalloc Vector2I[]
+		{
+			new Vector2I(1, 0), new Vector2I(-1, 0),
+			new Vector2I(0, 1), new Vector2I(0, -1),
+		};
+		// Fisher-Yates shuffle so the cap doesn't favour right/down.
+		for (int i = dirs.Length - 1; i > 0; i--)
+		{
+			int j = _rng.Next(i + 1);
+			(dirs[i], dirs[j]) = (dirs[j], dirs[i]);
+		}
+
+		int collapsed = 0;
+		foreach (var dir in dirs)
+		{
+			if (collapsed >= MaxCollapse) break;
+			if (_rng.NextDouble() >= CollapseChance) continue;
+			if (TryCollapse(new Vector2I(x + dir.X, y + dir.Y)))
+				collapsed++;
+		}
+	}
+
+	// Advance a single tile's depth by one layer, regardless of remaining HP,
+	// as long as the "cannot dig" rules allow it. Silent — no signals fire,
+	// so collapses don't generate pings or hint flashes.
+	public bool TryCollapse(Vector2I cell)
+	{
+		if (!InBounds(cell.X, cell.Y)) return false;
+		int d = _depth[cell.X, cell.Y];
+		if (d >= LayerCount) return false; // bedrock
+		if (_fragmentAt[cell.X, cell.Y, d] != null) return false; // fragment blocks
+		if (!CanDigDeeper(cell.X, cell.Y)) return false; // step constraint
+
+		_depth[cell.X, cell.Y] = d + 1;
+		return true;
 	}
 
 	// A tile may advance depth only if every in-bound 4-neighbor is already
