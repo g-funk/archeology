@@ -10,8 +10,8 @@
 [node name="Grid" type="Node2D" parent="." unique_id=567003810]
 position = Vector2(40, 80)
 script = ExtResource("1_grid")
-Width = 100
-Height = 75
+Width = 50
+Height = 25
 TileSize = 30
 
 [node name="ExcavationSystem" type="Node" parent="." unique_id=570293015]
