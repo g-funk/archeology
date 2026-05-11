@@ -20,6 +20,7 @@ For each tile:
 - Top and left walls are dark (shadowed near edge of the pit)
 - Bottom and right walls are bright (far edge catching light)
 - The dark-near / bright-far pairing makes a deeper tile read as a recessed pit
+- Wall thickness scales with the depth gap — a one-layer drop is thin, a multi-layer cliff is proportionally thicker
 
 ### Appearance
 

@@ -315,17 +315,18 @@ public partial class Grid : Node2D
 
 	private void DrawWalls()
 	{
-		int wallSize = Math.Max(2, TileSize / 8);
+		// Per-depth-step thickness. The actual wall width is this × (d - nd).
+		int unit = Math.Max(2, TileSize / 10);
 
 		for (int x = 0; x < Width; x++)
 		{
 			for (int y = 0; y < Height; y++)
 			{
 				int d = _depth[x, y];
-				TryDrawWall(x, y, d, 1, 0, Side.Right, wallSize);
-				TryDrawWall(x, y, d, -1, 0, Side.Left, wallSize);
-				TryDrawWall(x, y, d, 0, 1, Side.Bottom, wallSize);
-				TryDrawWall(x, y, d, 0, -1, Side.Top, wallSize);
+				TryDrawWall(x, y, d, 1, 0, Side.Right, unit);
+				TryDrawWall(x, y, d, -1, 0, Side.Left, unit);
+				TryDrawWall(x, y, d, 0, 1, Side.Bottom, unit);
+				TryDrawWall(x, y, d, 0, -1, Side.Top, unit);
 			}
 		}
 	}
@@ -333,15 +334,16 @@ public partial class Grid : Node2D
 	private enum Side { Top, Right, Bottom, Left }
 
 	// Draws a wall on (x, y)'s edge facing (x+dx, y+dy) when this tile is
-	// strictly deeper than the neighbor. Bottom/right edges read stronger
-	// than top/left, per VISUALS.md.
-	private void TryDrawWall(int x, int y, int d, int dx, int dy, Side side, int wallSize)
+	// strictly deeper than the neighbor. Wall thickness scales with the depth
+	// gap so a 3-layer drop reads deeper than a 1-layer drop.
+	private void TryDrawWall(int x, int y, int d, int dx, int dy, Side side, int unit)
 	{
 		int nx = x + dx;
 		int ny = y + dy;
 		if (!InBounds(nx, ny)) return;
 		int nd = _depth[nx, ny];
 		if (d <= nd) return;
+		int wallSize = unit * (d - nd);
 
 		// Top/left walls are shadowed and bottom/right walls are highlighted —
 		// the deeper tile reads as a pit with the bright wall catching light at

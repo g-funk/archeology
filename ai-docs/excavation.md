@@ -114,7 +114,7 @@ Fragment-related states (ochre hint, gold exposed, pale gold fully-exposed) are 
 
 The dark-near / bright-far pairing makes a deeper tile read as a recessed pit.
 
-Wall thickness is `max(2, TileSize / 8)`. No gradient is applied yet — a single flat color per wall.
+Wall thickness scales with the depth gap: `unit × (d - nd)`, where `unit = max(2, TileSize / 10)`. A drop of one layer is one unit thick, a drop of two is twice that, etc. No gradient is applied yet — a single flat color per wall.
 
 ---
 
