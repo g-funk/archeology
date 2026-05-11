@@ -123,19 +123,21 @@ The prototype must validate the core gameplay loop:
 ## Excavation System
 
 - 2D grid (tile-based)
-- Start with a single layer
+- Layered world: each tile has a stack of layers; `LayerCount` is configurable (default 4)
 - Each dig action targets a single tile
+- A tile can be dug only when its in-bound 4-neighbors are all at depth ≥ this tile's current depth — the tile can never be more than one layer deeper than its surroundings
+- Depth advances when the current layer's HP drains to zero; visual cues per VISUALS.md (floor darkens with depth, walls drawn between tiles of different depth)
 
-Tile types:
+Tile types (per layer):
 - soil (fast)
 - stone (slower)
 
 Fragments:
 - multi-tile shapes (prototype set: 2x2 square, 3x3 hollow box, plus, corner)
-- each fragment tile is buried under a soil or stone cover
-- digging a fragment tile clears its cover (same speed as plain soil/stone)
-- a fragment can only be collected once *all* its tiles are exposed; clicking any cell collects the whole fragment
-- clearing a tile next to a buried fragment tile surfaces a hint on that tile
+- each fragment lives entirely on one layer (its `Depth`), and never on layer 0 (topmost)
+- a fragment cell is "exposed" when its own tile's current depth equals the fragment's depth; collection requires all cells exposed; clicking any cell collects the whole fragment
+- collection advances every cell's depth past the fragment (to `Depth + 1`)
+- a buried fragment is "hinted" (ochre on the floor) when any neighbor of the fragment tile is dug past the fragment's depth — so the wall would expose the fragment's layer from the side
 
 ---
 

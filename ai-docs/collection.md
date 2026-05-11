@@ -38,15 +38,16 @@ Four prototype shapes. `Fragment.Template(shape)` returns the cell offsets relat
 |---|---|---|
 | `Id` | `int` | Sequential id assigned at spawn |
 | `Shape` | `FragmentShape` | Which template was used |
-| `Cells` | `IReadOnlyList<Vector2I>` | Absolute grid coordinates of each cell |
+| `Depth` | `int` | Layer the whole shape sits on. Always ≥ 1 (never on the topmost layer) and < `LayerCount` |
+| `Cells` | `IReadOnlyList<Vector2I>` | Absolute `(x, y)` grid coordinates of each cell (all at the same depth) |
 
 Templates are looked up via `Fragment.Template(shape)` whenever the relative shape is needed (e.g. when drawing in the side panel).
 
 ### Grid overlays
 
-Tracked alongside the cover arrays in `Grid`:
+Tracked alongside the layered terrain arrays in `Grid`:
 
-- `Fragment?[,] _fragmentAt` — per-cell pointer to the owning fragment, or `null`
+- `Fragment?[,,] _fragmentAt` — per-`(x, y, depth)` pointer to the owning fragment, or `null`
 - `List<Fragment> _fragments` — fragments still on the grid
 - `List<Fragment> _collectedFragments` — fragments the player has collected (drives the side panel)
 - `int FragmentsCollected` — count, also exposed via the `FragmentsChanged(int count)` signal
@@ -57,10 +58,10 @@ Tracked alongside the cover arrays in `Grid`:
 
 `Grid.SpawnFragments(rng, target)` runs after the terrain is generated:
 
-1. Pick a random shape and a random anchor cell.
+1. Pick a random shape, a random anchor cell, and a random depth in `[1, LayerCount)` — never depth 0.
 2. Compute absolute cells via `Fragment.Template(shape)`.
-3. Reject if any cell is out of bounds or already occupied by another fragment.
-4. On success, assign a new `Id`, append to `_fragments`, and write the reference into `_fragmentAt`.
+3. Reject if any cell is out of bounds or already occupied by another fragment **at that depth** (`_fragmentAt[x, y, depth] != null`). Fragments at different depths at the same `(x, y)` are allowed.
+4. On success, assign a new `Id`, append to `_fragments`, and write the reference into `_fragmentAt[x, y, depth]`.
 
 Loops until `_fragments.Count == FragmentTarget` (default 6) or 500 attempts have been spent.
 
@@ -68,29 +69,34 @@ Loops until `_fragments.Count == FragmentTarget` (default 6) or 500 attempts hav
 
 ## Lifecycle of a fragment cell
 
-| State | Trigger | Color |
+A fragment cell at `(x, y, Depth)` evolves with the tile's `_depth[x, y]` and what its neighbors have done:
+
+| State | Condition | Color |
 |---|---|---|
-| Buried | cover present, no 4-neighbor cleared | matches the cover (camouflaged) |
-| Hinted | cover present, at least one 4-neighbor cleared | muted ochre `(0.60, 0.50, 0.28)` |
-| Exposed (partial) | own cover cleared; *some* sibling cells of the same fragment still covered | standard gold `(1.00, 0.82, 0.32)` |
-| Exposed (full) | own cover cleared **and** all sibling cells cleared | bright pale gold `(1.00, 0.92, 0.55)` — collectable |
-| Collected | player clicked any cell of a fully-exposed fragment | cell becomes plain `Empty`; fragment moved to `_collectedFragments` |
+| Buried (hidden) | `_depth[x, y] < Depth` AND no neighbor's `_depth > Depth` | the floor's normal layer color (camouflaged) |
+| Hinted | `_depth[x, y] < Depth` AND some neighbor's `_depth > Depth` (the wall would expose the layer) | muted ochre `(0.60, 0.50, 0.28)` × depth-darken |
+| Exposed (partial) | `_depth[x, y] == Depth` AND some sibling cell of this fragment is still buried | standard gold `(1.00, 0.82, 0.32)` × depth-darken |
+| Exposed (full) | every cell of the fragment has `_depth == Depth` | bright pale gold `(1.00, 0.92, 0.55)` × depth-darken — collectable |
+| Collected | player clicked any cell of a fully-exposed fragment | every cell's `_depth` advances to `Depth + 1`; fragment moved to `_collectedFragments` |
 
-The "hint" propagates through the shape naturally: dig one cell of a fragment → its in-shape neighbors now have a cleared neighbor → they go ochre too.
+All fragment colors are passed through the same depth-darkening factor as the surrounding floors (see [ai-docs/excavation.md](excavation.md#floor-colors)).
 
-`HasClearedNeighbor(x, y)` (in `Grid.cs`) drives the hint check; `IsFragmentFullyExposed(frag)` drives the bright/collectable color and the collection gate.
+`AnyNeighborDeeperThan(x, y, Depth)` (in `Grid.cs`) drives the hint check; `IsFragmentFullyExposed(frag)` drives the bright/collectable color and the collection gate.
 
 ---
 
 ## Collection rules
 
-`Grid.HandleClick(cell)` (see [ai-docs/excavation.md](excavation.md)) calls `TryCollectFragment(cell)` first:
+`Grid.HandleClick(cell)` (see [ai-docs/excavation.md](excavation.md)):
 
-1. If the clicked cell has no fragment → return false (falls through to `Dig`).
-2. If the fragment isn't fully exposed → return false.
-3. Otherwise: null out every cell in `_fragmentAt`, remove the fragment from `_fragments`, append it to `_collectedFragments`, increment `FragmentsCollected`, emit `FragmentsChanged`, and `QueueRedraw`.
+1. If `_fragmentAt[x, y, _depth[x, y]] != null` → call `TryCollectFragment(cell)` and return. The fragment **blocks** further digging at this tile; the click can't fall through to `Dig`.
+2. Otherwise → call `Dig(cell)` (subject to the step constraint).
 
-Clicking a partial-exposed fragment cell is a no-op (the click silently does nothing — `TryCollectFragment` returns false and `Dig` is a no-op on `Empty`).
+`TryCollectFragment`:
+
+1. No fragment at this tile's current depth → `false`.
+2. Fragment present but not every cell is at its depth (`IsFragmentFullyExposed` false) → `false` (the click is a silent no-op).
+3. Otherwise: for every cell, clear `_fragmentAt[cell, Depth]` and set `_depth[cell] = Depth + 1`. Remove from `_fragments`, append to `_collectedFragments`, increment `FragmentsCollected`, emit `FragmentsChanged`, `QueueRedraw`.
 
 ---
 
@@ -131,9 +137,10 @@ Clicking a partial-exposed fragment cell is a no-op (the click silently does not
 
 This feature sits on top of [ai-docs/excavation.md](excavation.md):
 
-- The fragment overlay rides on the same per-cell arrays. Clearing a cell's *cover* is what reveals or fully exposes the fragment cell beneath.
-- The hint state uses the dig system's "neighbor is `Empty`" check.
-- The single-click entry point (`HandleClick`) is shared — collection is just the first branch.
+- The fragment overlay rides on the same per-`(x, y, depth)` arrays as the layered terrain. Advancing a tile's `_depth` is what reveals, fully exposes, or hints at fragment cells.
+- The hint state uses `AnyNeighborDeeperThan(x, y, frag.Depth)` — the wall-exposure check.
+- The single-click entry point (`HandleClick`) is shared — collection is the priority branch when a fragment cell is at the current depth.
+- Collection ends by **advancing depth past the fragment** (`_depth = Depth + 1`), which interacts with the step constraint just like a regular dig would.
 
 ---
 

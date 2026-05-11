@@ -38,7 +38,7 @@ offset_right = 1264.0
 offset_bottom = 70.0
 theme_override_colors/font_color = Color(0.78, 0.72, 0.58, 1)
 theme_override_font_sizes/font_size = 14
-text = "Click to dig (soil = 1 hit, stone = 2). Ochre tiles hint at a buried fragment cell. Fragments span multiple tiles — expose every tile of the shape (whole shape glows pale gold), then click any cell to collect."
+text = "Click to dig one layer (soil = 1 hit, stone = 2). A tile can only go one layer deeper than its neighbours — terrace down. Floors darken with depth, walls show the steps. Ochre = a fragment hides below this tile. Pale gold = whole shape exposed; click any cell to collect."
 
 [node name="CollectionPanel" type="Control" parent="HUD" unique_id=1740272661]
 layout_mode = 3

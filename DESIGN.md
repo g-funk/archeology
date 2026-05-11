@@ -85,6 +85,7 @@ The player:
 
 - Tap to excavate one tile at a time
 - Soil clears in one hit; stone takes more
+- Player can dig through multiple layers creating holes, but only one deeper than surrounds
 
 ---
 
