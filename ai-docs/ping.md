@@ -40,11 +40,12 @@ After each successful dig, a brief flash appears on the floor above the nearest 
    distance = sqrt(dx² + dy² + dz²)
    ```
    Depth differences count exactly the same as horizontal differences (one layer = one tile-width).
-3. If the closest cell is within `PingRadius`, emit a real ping at that cell's `(x, y)` with linear-falloff brightness:
+3. If that closest cell is already **exposed** (`_grid.GetDepth(fx, fy) == frag.Depth`), skip the ping entirely — the player can see it on the floor; no hint needed. The next-closest cell is not considered.
+4. Otherwise, if the closest cell is within `PingRadius`, emit a real ping at that cell's `(x, y)` with linear-falloff brightness:
    ```
    brightness = PingPeakBrightness × (1 - distance / PingRadius)
    ```
-4. Otherwise, no ping.
+5. Otherwise, no ping.
 
 Pings stack — multiple can be active at the same `(x, y)` if the player digs rapidly nearby. Later draws paint over earlier ones.
 
