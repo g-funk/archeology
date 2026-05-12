@@ -4,7 +4,6 @@
 [ext_resource type="Script" uid="uid://i2dqtcpm734q" path="res://scripts/excavation/ExcavationSystem.cs" id="2_dig"]
 [ext_resource type="Script" uid="uid://b0tbhjscomwu" path="res://scripts/ui/CollectionPanel.cs" id="3_panel"]
 [ext_resource type="Script" uid="uid://bvhleaovejbgc" path="res://scripts/player/CameraController.cs" id="4_camera"]
-[ext_resource type="Script" uid="uid://7e0hbedbbbvm" path="res://scripts/ping/PingSystem.cs" id="5_ping"]
 [ext_resource type="Script" uid="uid://bmtlyodndclh4" path="res://scripts/hints/HintsSystem.cs" id="6_hints"]
 [ext_resource type="Script" path="res://scripts/radar/RadarSystem.cs" id="7_radar"]
 
@@ -17,9 +16,6 @@ Width = 50
 Height = 25
 TileSize = 30
 MaxCollapse = 4
-
-[node name="PingSystem" type="Node2D" parent="Grid" unique_id=283543320]
-script = ExtResource("5_ping")
 
 [node name="HintsSystem" type="Node2D" parent="Grid" unique_id=894805069]
 script = ExtResource("6_hints")

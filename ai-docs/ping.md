@@ -1,5 +1,7 @@
 # Ping
 
+> **Status: disabled.** The `PingSystem` node is not currently in `Main.tscn`; the script (`scripts/ping/PingSystem.cs`) is kept on disk. Re-enable by adding the node back under `Grid` and pointing it at the script.
+
 After each successful dig, a brief flash appears on the floor above the nearest fragment — a sonar-like cue that something is buried within reach. Occasionally a "fake" ping fires on a random tile to keep the signal noisy.
 
 > **Design source:** [`design/features/PING.md`](../design/features/PING.md)
