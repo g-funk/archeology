@@ -31,7 +31,7 @@ One doc per implemented feature describing current code: file paths, data model,
 
 - [ai-docs/excavation.md](ai-docs/excavation.md) — layered grid, dig click flow, walls, camera fit
 - [ai-docs/collection.md](ai-docs/collection.md) — multi-tile fragments, exposure rule, side panel
-- [ai-docs/ping.md](ai-docs/ping.md) — dig-triggered flash near the closest buried fragment
+- [ai-docs/ping.md](ai-docs/ping.md) — dig-triggered flash near the closest buried fragment **(currently disabled in `Main.tscn` — script kept; flip back by re-adding the `PingSystem` node)**
 - [ai-docs/hints.md](ai-docs/hints.md) — red flash on neighbors that block a dig
 - [ai-docs/random_collapse.md](ai-docs/random_collapse.md) — 0..N neighbor collapses per dig
 - [ai-docs/radar.md](ai-docs/radar.md) — expanding sonar ring on dig, directional wedge per detected fragment
