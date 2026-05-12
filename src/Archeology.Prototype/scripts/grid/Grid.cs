@@ -10,7 +10,13 @@ public partial class Grid : Node2D
 	[Export] public int Height { get; set; } = 16;
 	[Export] public int TileSize { get; set; } = 36;
 	[Export] public int Seed { get; set; } = 1337;
-	[Export] public int FragmentTarget { get; set; } = 6;
+	// Fragment count is a random pick in [MinFragments, MaxFragments].
+	[Export] public int MinFragments { get; set; } = 4;
+	[Export] public int MaxFragments { get; set; } = 8;
+	// Each fragment is a randomly grown polyomino with a tile count picked
+	// from [MinFragmentTiles, MaxFragmentTiles].
+	[Export] public int MinFragmentTiles { get; set; } = 4;
+	[Export] public int MaxFragmentTiles { get; set; } = 16;
 	// Number of dig-able layers. Depths range over [0, LayerCount); reaching
 	// LayerCount means the tile has been dug past all material (bedrock).
 	[Export] public int LayerCount { get; set; } = 4;
@@ -87,35 +93,45 @@ public partial class Grid : Node2D
 			}
 		}
 
-		SpawnFragments(_rng, FragmentTarget);
+		SpawnFragments(_rng);
 
 		EmitSignal(SignalName.FragmentsChanged, FragmentsCollected);
 		QueueRedraw();
 	}
 
-	private void SpawnFragments(Random rng, int target)
+	private void SpawnFragments(Random rng)
 	{
 		if (LayerCount <= 1) return; // no non-topmost layer to place into
 
-		var shapes = (FragmentShape[])Enum.GetValues(typeof(FragmentShape));
+		int target = Math.Max(0, MinFragments) + rng.Next(Math.Max(0, MaxFragments - MinFragments) + 1);
 		const int maxAttempts = 500;
 		int attempts = 0;
 		while (_fragments.Count < target && attempts < maxAttempts)
 		{
 			attempts++;
-			var shape = shapes[rng.Next(shapes.Length)];
-			var template = Fragment.Template(shape);
-			int ax = rng.Next(Width);
-			int ay = rng.Next(Height);
+
+			int tileCount = Math.Max(1, MinFragmentTiles) + rng.Next(Math.Max(0, MaxFragmentTiles - MinFragmentTiles) + 1);
+			var cells = GenerateRandomShape(tileCount, rng);
+
+			int shapeW = 1, shapeH = 1;
+			foreach (var c in cells)
+			{
+				if (c.X + 1 > shapeW) shapeW = c.X + 1;
+				if (c.Y + 1 > shapeH) shapeH = c.Y + 1;
+			}
+			if (shapeW > Width || shapeH > Height) continue;
+
+			int ax = rng.Next(Width - shapeW + 1);
+			int ay = rng.Next(Height - shapeH + 1);
 			// Depth 0 is the topmost layer — fragments live on 1..LayerCount-1.
 			int depth = 1 + rng.Next(LayerCount - 1);
 
-			var abs = new Vector2I[template.Count];
+			var abs = new Vector2I[cells.Length];
 			bool fits = true;
-			for (int i = 0; i < template.Count; i++)
+			for (int i = 0; i < cells.Length; i++)
 			{
-				int cx = ax + template[i].X;
-				int cy = ay + template[i].Y;
+				int cx = ax + cells[i].X;
+				int cy = ay + cells[i].Y;
 				if (!InBounds(cx, cy) || _fragmentAt[cx, cy, depth] != null)
 				{
 					fits = false;
@@ -125,10 +141,56 @@ public partial class Grid : Node2D
 			}
 			if (!fits) continue;
 
-			var frag = new Fragment(_fragments.Count, shape, depth, abs);
+			// FragmentShape is left at a sentinel value — RelativeCells drives rendering now.
+			var frag = new Fragment(_fragments.Count, FragmentShape.SquareTwo, depth, abs);
 			_fragments.Add(frag);
 			foreach (var c in abs) _fragmentAt[c.X, c.Y, depth] = frag;
 		}
+	}
+
+	// Grows a random connected polyomino: start with one cell, repeatedly pick
+	// a random empty 4-neighbor of the current shape and add it. Result is
+	// normalized so the minimum X and Y are both 0.
+	private static Vector2I[] GenerateRandomShape(int tileCount, Random rng)
+	{
+		ReadOnlySpan<Vector2I> dirs = stackalloc Vector2I[]
+		{
+			new Vector2I(1, 0), new Vector2I(-1, 0),
+			new Vector2I(0, 1), new Vector2I(0, -1),
+		};
+
+		var cells = new HashSet<Vector2I>();
+		var perimeter = new List<Vector2I>();
+
+		var seed = new Vector2I(0, 0);
+		cells.Add(seed);
+		foreach (var dir in dirs) perimeter.Add(seed + dir);
+
+		while (cells.Count < tileCount && perimeter.Count > 0)
+		{
+			int idx = rng.Next(perimeter.Count);
+			var newCell = perimeter[idx];
+			perimeter.RemoveAt(idx);
+
+			if (!cells.Add(newCell)) continue; // duplicate entry in the list, skip
+
+			foreach (var dir in dirs)
+			{
+				var nb = newCell + dir;
+				if (!cells.Contains(nb)) perimeter.Add(nb);
+			}
+		}
+
+		int minX = int.MaxValue, minY = int.MaxValue;
+		foreach (var c in cells)
+		{
+			if (c.X < minX) minX = c.X;
+			if (c.Y < minY) minY = c.Y;
+		}
+		var result = new Vector2I[cells.Count];
+		int i2 = 0;
+		foreach (var c in cells) result[i2++] = new Vector2I(c.X - minX, c.Y - minY);
+		return result;
 	}
 
 	public bool InBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;

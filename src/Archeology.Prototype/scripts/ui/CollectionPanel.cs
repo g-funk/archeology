@@ -93,7 +93,7 @@ public partial class CollectionPanel : Control
 		// Slot inset background — a darker well so the gold cells pop.
 		DrawRect(new Rect2(origin, size), new Color(0.10f, 0.08f, 0.07f), filled: true);
 
-		var template = Fragment.Template(frag.Shape);
+		var template = frag.RelativeCells;
 		int maxX = 0, maxY = 0;
 		foreach (var c in template)
 		{
@@ -103,8 +103,18 @@ public partial class CollectionPanel : Control
 		int wCells = maxX + 1;
 		int hCells = maxY + 1;
 
-		float pixW = wCells * CellSize + (wCells - 1) * CellSpacing;
-		float pixH = hCells * CellSize + (hCells - 1) * CellSpacing;
+		// Auto-scale cells so any generated shape (up to ~16 tiles in odd layouts) fits.
+		const float slotInset = 4f;
+		float availW = Mathf.Max(1f, size.X - 2 * slotInset);
+		float availH = Mathf.Max(1f, size.Y - 2 * slotInset);
+		float cellByW = (availW - (wCells - 1) * CellSpacing) / wCells;
+		float cellByH = (availH - (hCells - 1) * CellSpacing) / hCells;
+		float cellSize = Mathf.Min(CellSize, Mathf.Min(cellByW, cellByH));
+		if (cellSize < 1f) cellSize = 1f;
+		float spacing = cellSize > 4f ? CellSpacing : 0f;
+
+		float pixW = wCells * cellSize + (wCells - 1) * spacing;
+		float pixH = hCells * cellSize + (hCells - 1) * spacing;
 		var shapeOrigin = origin + new Vector2(
 			(size.X - pixW) / 2f,
 			(size.Y - pixH) / 2f);
@@ -114,9 +124,9 @@ public partial class CollectionPanel : Control
 		foreach (var c in template)
 		{
 			var cellRect = new Rect2(
-				shapeOrigin.X + c.X * (CellSize + CellSpacing),
-				shapeOrigin.Y + c.Y * (CellSize + CellSpacing),
-				CellSize, CellSize);
+				shapeOrigin.X + c.X * (cellSize + spacing),
+				shapeOrigin.Y + c.Y * (cellSize + spacing),
+				cellSize, cellSize);
 			DrawRect(cellRect, gold, filled: true);
 		}
 	}

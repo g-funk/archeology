@@ -21,27 +21,29 @@ Fragments are multi-tile shapes hidden beneath the dig grid. The player digs to 
 
 ## Data model
 
-### `FragmentShape` (enum)
+### Random shape generation
 
-Four prototype shapes. `Fragment.Template(shape)` returns the cell offsets relative to a top-left anchor:
+Fragments are random connected polyominoes grown at spawn time, not picked from a fixed set. The growth rule per fragment:
 
-| Shape | Tiles | Layout (`X` = filled, `.` = empty) |
-|---|---|---|
-| `SquareTwo` | 4 | `X X` / `X X` |
-| `BoxThree` | 8 | `X X X` / `X . X` / `X X X` |
-| `Plus` | 5 | `. X .` / `X X X` / `. X .` |
-| `Corner` | 5 | `X X X` / `X . .` / `X . .` |
+1. Place a seed cell at `(0, 0)`.
+2. Maintain a list of cells that are 4-neighbors of the current shape but not yet in it.
+3. Repeatedly pick a random entry from that perimeter, add it to the shape, and append its empty 4-neighbors to the perimeter.
+4. Stop when the shape has the target number of tiles (see `MinFragmentTiles` / `MaxFragmentTiles`).
+5. Normalize the resulting cells so that `min(X) == 0` and `min(Y) == 0`.
+
+This is "any tile can attach to any tile from the side as long as there's no tile already" — the perimeter step enforces both adjacency and no-overlap.
+
+The original `FragmentShape` enum and `Fragment.Template(shape)` are still in `Fragment.cs` but **unused**. They're preserved so the predefined-shape mode can be re-enabled later by swapping the spawn body back.
 
 ### `Fragment` (class)
 
 | Member | Type | Description |
 |---|---|---|
 | `Id` | `int` | Sequential id assigned at spawn |
-| `Shape` | `FragmentShape` | Which template was used |
+| `Shape` | `FragmentShape` | Legacy — left at `SquareTwo` for random fragments; not consulted for rendering |
 | `Depth` | `int` | Layer the whole shape sits on. Always ≥ 1 (never on the topmost layer) and < `LayerCount` |
 | `Cells` | `IReadOnlyList<Vector2I>` | Absolute `(x, y)` grid coordinates of each cell (all at the same depth) |
-
-Templates are looked up via `Fragment.Template(shape)` whenever the relative shape is needed (e.g. when drawing in the side panel).
+| `RelativeCells` | `IReadOnlyList<Vector2I>` | `Cells` shifted so `min(X) == 0` and `min(Y) == 0`; the shape's intrinsic layout, used by the side panel. Computed lazily |
 
 ### Grid overlays
 
@@ -56,14 +58,18 @@ Tracked alongside the layered terrain arrays in `Grid`:
 
 ## Spawning
 
-`Grid.SpawnFragments(rng, target)` runs after the terrain is generated:
+`Grid.SpawnFragments(rng)` runs after the terrain is generated:
 
-1. Pick a random shape, a random anchor cell, and a random depth in `[1, LayerCount)` — never depth 0.
-2. Compute absolute cells via `Fragment.Template(shape)`.
-3. Reject if any cell is out of bounds or already occupied by another fragment **at that depth** (`_fragmentAt[x, y, depth] != null`). Fragments at different depths at the same `(x, y)` are allowed.
-4. On success, assign a new `Id`, append to `_fragments`, and write the reference into `_fragmentAt[x, y, depth]`.
+1. Pick the total fragment count: `target = MinFragments + rng.Next(MaxFragments - MinFragments + 1)`.
+2. Per attempt (up to 500):
+   - Pick a tile count: `MinFragmentTiles + rng.Next(MaxFragmentTiles - MinFragmentTiles + 1)`.
+   - Call `GenerateRandomShape(tileCount, rng)` to grow a normalized polyomino.
+   - Pick a random anchor `(ax, ay)` such that the shape's bounding box fits in the grid, and a random depth in `[1, LayerCount)`.
+   - Compute the absolute cells.
+   - Reject if any cell is out of bounds or already occupied by another fragment **at that depth**. Fragments at different depths at the same `(x, y)` are allowed.
+3. On success, assign a new `Id`, append to `_fragments`, and write the reference into `_fragmentAt[x, y, depth]`.
 
-Loops until `_fragments.Count == FragmentTarget` (default 6) or 500 attempts have been spent.
+Loops until `_fragments.Count == target` or 500 attempts have been spent.
 
 ---
 
@@ -113,7 +119,7 @@ All fragment colors are passed through the same depth-darkening factor as the su
   - Header text "Fragments: N" using the theme's default font.
   - Below the header, a vertical stack of slots in `_collectedFragments` order. Each slot:
     - Dark inset background.
-    - Mini-tile rendering of the shape: each fragment cell drawn as a small gold square at `CellSize`, separated by `CellSpacing`. The shape preserves its template layout (a `SquareTwo` looks visibly smaller than a `BoxThree` inside the same slot).
+    - Mini-tile rendering of the shape: each cell of `frag.RelativeCells` drawn as a small gold square. Cell size is `min(CellSize, fit-to-slot)` — large or oddly-stretched random polyominoes scale down to fit; small ones use the configured `CellSize`. Spacing collapses to 0 when cells get very small.
     - Same gold as an exposed grid tile, so the panel and grid read as the same material.
 - **No interaction yet** — slots are purely visual. Click handling will be wired when interpretation lands (CLAUDE.md implementation step 7).
 
