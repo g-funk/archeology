@@ -23,10 +23,17 @@ public partial class PingSystem : Node2D
 	[Export] public float FadeMs { get; set; } = 600f;
 	// Probability per dig of producing a fake ping instead of a real one.
 	[Export] public float FakePingChance { get; set; } = 0.05f;
+	// Flip on in the inspector to log ping decisions to the Godot console.
+	[Export] public bool DebugLogging { get; set; } = false;
 
 	private Grid? _grid;
 	private readonly List<Ping> _pings = new();
 	private readonly Random _rng = new();
+	// For each fragment that has been pinged at least once, the specific cell
+	// that was flashed. After the first ping, only that same cell is eligible
+	// to ping again — "any other part cannot be pinged". Reference-keyed so
+	// `Grid.Generate` naturally invalidates old entries.
+	private readonly Dictionary<Fragment, Vector2I> _pingedCellByFragment = new();
 
 	private struct Ping
 	{
@@ -53,38 +60,67 @@ public partial class PingSystem : Node2D
 
 		if (_rng.NextDouble() < FakePingChance)
 		{
+			if (DebugLogging) GD.Print($"[Ping] dig=({digX},{digY},{digDepth}) → fake roll hit");
 			FireFakePing(digX, digY);
 			return;
 		}
 
-		if (TryFindClosestFragmentCell(digX, digY, digDepth, out int fx, out int fy, out int fragDepth, out float distance))
-		{
-			// Skip the ping entirely if the closest fragment cell is already
-			// exposed — the player can see it on the floor, no need to hint.
-			if (_grid.GetDepth(fx, fy) == fragDepth) return;
+		int totalFragments = _grid.Fragments.Count;
+		int eligibleFragments = 0;
+		foreach (var f in _grid.Fragments) if (IsFragmentEligibleForPing(f)) eligibleFragments++;
 
-			// Linear falloff: closer = brighter.
+		if (TryFindClosestEligibleCell(digX, digY, digDepth, out Fragment? frag, out int fx, out int fy, out float distance))
+		{
 			float falloff = 1f - (distance / PingRadius);
 			float brightness = PingPeakBrightness * falloff;
+			if (DebugLogging) GD.Print($"[Ping] dig=({digX},{digY},{digDepth}) → real cell=({fx},{fy},{frag!.Depth}) dist={distance:F2} brightness={brightness:F3} eligible={eligibleFragments}/{totalFragments} locked={_pingedCellByFragment.Count}");
 			if (brightness > 0f)
 			{
 				_pings.Add(new Ping { X = fx, Y = fy, PeakBrightness = brightness, ElapsedMs = 0f });
+				// Lock this fragment to this cell on the *first* ping only;
+				// subsequent searches restrict it to the same cell.
+				if (!_pingedCellByFragment.ContainsKey(frag!))
+				{
+					_pingedCellByFragment[frag!] = new Vector2I(fx, fy);
+				}
 				QueueRedraw();
 			}
 		}
+		else if (DebugLogging)
+		{
+			GD.Print($"[Ping] dig=({digX},{digY},{digDepth}) → no eligible cell in radius {PingRadius}. eligible={eligibleFragments}/{totalFragments} locked={_pingedCellByFragment.Count}");
+		}
 	}
 
-	private bool TryFindClosestFragmentCell(int digX, int digY, int digDepth, out int fx, out int fy, out int fragDepth, out float bestDistance)
+	// A fragment is eligible to ping at all only if none of its cells is
+	// already exposed. The "pinged once" rule constrains *which* cells can be
+	// considered, not whether the fragment itself participates.
+	private bool IsFragmentEligibleForPing(Fragment frag)
 	{
+		foreach (var c in frag.Cells)
+		{
+			if (_grid!.GetDepth(c.X, c.Y) == frag.Depth) return false; // any cell exposed
+		}
+		return true;
+	}
+
+	private bool TryFindClosestEligibleCell(int digX, int digY, int digDepth, out Fragment? closest, out int fx, out int fy, out float bestDistance)
+	{
+		closest = null;
 		fx = fy = 0;
-		fragDepth = 0;
 		bestDistance = float.MaxValue;
 		if (_grid == null) return false;
 
 		foreach (var frag in _grid.Fragments)
 		{
+			if (!IsFragmentEligibleForPing(frag)) continue;
+
+			// If this fragment was pinged before, only its locked cell is in play.
+			bool hasLocked = _pingedCellByFragment.TryGetValue(frag, out var lockedCell);
 			foreach (var c in frag.Cells)
 			{
+				if (hasLocked && (c.X != lockedCell.X || c.Y != lockedCell.Y)) continue;
+
 				float dx = c.X - digX;
 				float dy = c.Y - digY;
 				float dz = frag.Depth - digDepth;
@@ -94,12 +130,12 @@ public partial class PingSystem : Node2D
 					bestDistance = d;
 					fx = c.X;
 					fy = c.Y;
-					fragDepth = frag.Depth;
+					closest = frag;
 				}
 			}
 		}
 
-		return bestDistance < PingRadius;
+		return closest != null && bestDistance < PingRadius;
 	}
 
 	private void FireFakePing(int digX, int digY)
