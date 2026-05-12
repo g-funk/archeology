@@ -32,22 +32,29 @@ After each successful dig, a brief flash appears on the floor above the nearest 
 `PingSystem.OnDug(digX, digY, digDepth)`:
 
 1. With probability `FakePingChance`, fire a **fake ping**: pick a random in-bounds tile within `±PingRadius` of the dig, flash it with a random brightness in `[0, PingPeakBrightness)`. Return early.
-2. Otherwise, scan every cell of every fragment in `Grid.Fragments` and pick the one with the smallest 3D distance to the dig:
+2. Otherwise, scan `Grid.Fragments` for the closest cell of any **eligible** fragment. A fragment is eligible only if **no** cell of it is exposed (`_grid.GetDepth(c.X, c.Y) != frag.Depth` for every cell).
+3. For each eligible fragment, the candidate cells are restricted by the **lock map**:
+   - If `_pingedCellByFragment` already contains this fragment, only its locked cell is considered.
+   - Otherwise every cell of the fragment is considered.
+4. Distance is 3D, with one layer counted the same as one tile-width:
    ```
    dx = cell.X - digX
    dy = cell.Y - digY
    dz = frag.Depth - digDepth
    distance = sqrt(dx² + dy² + dz²)
    ```
-   Depth differences count exactly the same as horizontal differences (one layer = one tile-width).
-3. If that closest cell is already **exposed** (`_grid.GetDepth(fx, fy) == frag.Depth`), skip the ping entirely — the player can see it on the floor; no hint needed. The next-closest cell is not considered.
-4. Otherwise, if the closest cell is within `PingRadius`, emit a real ping at that cell's `(x, y)` with linear-falloff brightness:
+5. If the closest in-range candidate is within `PingRadius`, emit a real ping at that cell with linear-falloff brightness:
    ```
    brightness = PingPeakBrightness × (1 - distance / PingRadius)
    ```
-5. Otherwise, no ping.
+   If the fragment isn't in the lock map yet, this is its **first ping** and the chosen cell becomes its locked cell — every later ping for this fragment must fire on the same cell.
+6. Otherwise, no ping.
 
-Pings stack — multiple can be active at the same `(x, y)` if the player digs rapidly nearby. Later draws paint over earlier ones.
+The lock map (`Dictionary<Fragment, Vector2I>`) is keyed by fragment reference, so when `Grid.Generate` builds a fresh list of `Fragment` instances the old entries become unreachable garbage and the new fragments start un-locked.
+
+**Effect for the player:** the first cell a fragment flashes at becomes its persistent "beacon" — repeatedly digging near it keeps flashing the same cell. Other cells of the same shape stay silent. The fragment becomes ineligible entirely only once *any* of its cells gets exposed.
+
+Pings stack on the floor — multiple can be visible at the same `(x, y)` if the player digs rapidly nearby. Later draws paint over earlier ones.
 
 ---
 

@@ -8,4 +8,5 @@ Ping is a small feature that helps in locating the potential dig sites. When the
 * The radius of ping is configurable
 * The brightest value (some number value) is configurable
 * The fade length is configurable (milliseconds)
-* If the closes fragment tile is exposed, no ping effect
+* If any part of the fragment is exposed -> no ping
+* If one part of the fragment has been pinged at any point, any other part cannot be pinged
