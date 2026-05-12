@@ -1,455 +1,132 @@
-# 🏺 Archaeology Game — Design Document  
-**Working Title:** *Fragments of the Past*  
-**Version:** 0.1  
-**Author:** You (+ ChatGPT sparring)
+# 🏺 Archaeology Game — Design Document
+**Working Title:** *Fragments of the Past*
 
 > **Implementation status:** see [ai-docs/](../ai-docs/) for per-feature documentation of what is currently built.
-> - [ai-docs/excavation.md](../ai-docs/excavation.md) — §3 Excavation System
-> - [ai-docs/collection.md](../ai-docs/collection.md) — §3.3 multi-tile rules + §4 Artifact System (fragment portion)
+> - [ai-docs/excavation.md](../ai-docs/excavation.md) — the Excavation section
+> - [ai-docs/collection.md](../ai-docs/collection.md) — the Fragments & Artifacts section
+> - [ai-docs/ping.md](../ai-docs/ping.md), [ai-docs/hints.md](../ai-docs/hints.md), [ai-docs/random_collapse.md](../ai-docs/random_collapse.md) — feedback feature docs
 
 ---
 
-# 1. Overview
+## Design Pillars
 
-## 1.1 High Concept
+1. Discovery over collection.
+2. Interpretation over certainty.
+3. Connection over completion.
+4. Simplicity in input, depth in meaning.
 
-A **single-player archaeology game** where players excavate a layered world, uncovering fragmented artifacts. Each artifact is partially meaningful alone, but gains deeper meaning when combined with fragments discovered by other players asynchronously.
-
-> **Core Pillar:**  
 > *Alone you discover. Together you understand.*
 
 ---
 
-## 1.2 Player Experience
+## 1. Overview
 
-The player:
-- Digs through layered terrain
-- Discovers artifact fragments
-- Interprets their meaning
-- Occasionally connects their findings with others
-- Gradually uncovers a larger hidden narrative
+A single-player archaeology game where players excavate a layered world, uncovering fragmented artifacts. Each artifact is partially meaningful alone and gains deeper meaning when combined with fragments discovered by other players asynchronously.
 
----
-
-## 1.3 Platform & Scope
-
-- **Platform:** Desktop, Steam
+- **Platform:** Desktop / Steam
 - **Mode:** Single-player with async social features
-- **Session Length:** 1–15 minutes typical
+- **Session length:** 1–15 minutes typical
+
+The player digs through layered terrain, discovers artifact fragments, interprets their meaning, and occasionally connects findings with others — gradually uncovering a larger hidden narrative.
 
 ---
 
-# 2. Core Gameplay Loop
+## 2. Gameplay Loop
 
-## 2.1 Short Loop (a few minutes)
-
-1. Player digs tiles
-2. Reveals:
-   - empty space
-   - material
-   - fragment
-3. Fragment added to journal
-4. Possible hint or match triggered
+- **Short (minutes):** dig tiles → reveal empty space, material, or fragment → fragment enters journal → optional hint or match.
+- **Medium (a session):** work on a partial artifact → interpret meaning → compare async → receive matches → progress deeper.
+- **Long (sessions):** complete artifacts, refine interpretations, contribute to shared knowledge, unlock deeper layers and narrative.
 
 ---
 
-## 2.2 Medium Loop (10–15 minutes)
+## 3. Excavation
 
-1. Work on partially discovered artifact
-2. Interpret meaning
-3. Compare fragments (async)
-4. Receive hints / matches
-5. Progress deeper layer
-
----
-
-## 2.3 Long Loop
-
-- Complete artifacts
-- Refine interpretations
-- Contribute to shared knowledge
-- Unlock deeper layers and narrative
+- 2D grid (~100×100 per layer) with 5–20 depth layers.
+- Tap to dig one tile at a time. Soil clears in one hit, stone in more.
+- A tile can only be dug one layer deeper than its surroundings — players must terrace down.
+- Fragments occupy multi-tile shapes buried under soil or stone. A fragment can only be collected once *all* its tiles are exposed.
+- Clearing a tile adjacent to a buried fragment surfaces a hint on that tile.
 
 ---
 
-# 3. Excavation System
+## 4. Fragments & Artifacts
 
-## 3.1 Grid
+An **artifact** is a graph of fragments: nodes are fragments, edges are relationships.
 
-- 2D grid (e.g. 100x100 per layer)
-- Multiple depth layers (5–20 initially)
+Each **fragment** has:
+- a shape (silhouette / matchable edges),
+- a visual identity (symbols, material, patterns),
+- hidden semantic tags (culture, function, meaning),
+- a player interpretation.
 
----
+Artifact tiers:
 
-## 3.2 Digging Mechanics
+| Tier | Fragments | Completion |
+|---|---|---|
+| 1 — Self-contained | 2–4 | solo |
+| 2 — Partial | 4–10 | meaningful but incomplete alone |
+| 3 — Distributed | 8–20 | requires async collaboration |
 
-- Tap to excavate one tile at a time
-- Soil clears in one hit; stone takes more
-- Player can dig through multiple layers creating holes, but only one deeper than surrounds
-
----
-
-## 3.3 Constraints
-
-- Fragments occupy multiple tiles arranged in a shape
-- Each fragment tile is buried under soil or stone
-- Digging a fragment tile clears its cover (same speed as plain soil/stone)
-- A fragment can only be collected once *all* its tiles are exposed
-- Clearing a tile adjacent to a buried fragment tile surfaces a hint on that tile
-
-### Prototype shapes
-
-- 2x2 square (4 tiles)
-- 3x3 hollow box (8 tiles, empty middle)
-- Plus (5 tiles)
-- Corner (5 tiles inside a 3x3)
+Meaning layers: **surface** (immediate visual) → **interpretation** (player's guess) → **true meaning** (revealed by connections).
 
 ---
 
-## 3.4 Materials
+## 5. Interpretation
 
-Tiles may contain:
-- soil (easy)
-- stone (slower)
-- special layers (later gameplay)
+Players assign meaning to artifacts: weapon, tool, ritual object, unknown.
 
----
+Each interpretation carries a confidence (low / medium / high), informed by fragment completeness, matches with others, and global knowledge.
 
-# 4. Artifact System (Core System)
+When new fragments connect, prior interpretations may change. The player is notified.
 
-## 4.1 Artifact Structure
-
-Each artifact is a **graph of fragments**:
-
-- Nodes = fragments  
-- Edges = relationships  
+> Key emotional moment: *"I was wrong."*
 
 ---
 
-## 4.2 Fragment Properties
+## 6. Async Social
 
-Each fragment has:
-
-### A. Shape
-- silhouette  
-- edges that can match  
-
-### B. Visual Identity
-- symbols  
-- material  
-- patterns  
-
-### C. Semantic Tags (hidden)
-- culture  
-- function  
-- meaning  
-
-### D. Player Interpretation
-- what the player believes it is  
+- No forced multiplayer, no real-time dependency — collaboration emerges from passive aggregation and explicit opt-in.
+- The system detects shape similarity and semantic overlap and surfaces match suggestions ("Possible match exists", "Similar fragment found").
+- Players can view ghost overlays, compare fragments, and accept matches.
+- A discovery feed aggregates notable finds and new connections across the player base.
 
 ---
 
-## 4.3 Artifact Types
+## 7. Progression
 
-### Tier 1 — Self-contained
-- 2–4 fragments  
-- completable solo  
-
-### Tier 2 — Partial
-- 4–10 fragments  
-- meaningful but incomplete alone  
-
-### Tier 3 — Distributed
-- 8–20 fragments  
-- require async collaboration for full meaning  
+- **Player skills:** larger dig area, better hints, safer excavation.
+- **Knowledge:** symbol decoding, cultural understanding, pattern recognition.
+- **Layers:** deeper layers unlock over time and host more complex artifacts.
+- **Optional helpers:** time-limited bots that boost dig speed, reveal hidden fragments, or reduce damage.
 
 ---
 
-## 4.4 Meaning Layers
+## 8. Content Scope (initial target)
 
-| Layer | Description |
-|------|------------|
-| Surface | Immediate visual meaning |
-| Interpretation | Player’s guess |
-| True Meaning | Revealed through connections |
-
----
-
-# 5. Interpretation System
-
-## 5.1 Player Interpretation
-
-Players assign meaning to artifacts:
-- weapon  
-- tool  
-- ritual object  
-- unknown  
+- 1 culture
+- 20–40 artifacts, 100–200 fragments, 3–5 layers
+- Each artifact connects to 2–5 others
+- Clusters: burial practices, tools, symbolic language, ritual objects
 
 ---
 
-## 5.2 Confidence System
+## 9. UX
 
-Each interpretation has:
-- low / medium / high confidence  
-
-Based on:
-- fragment completeness  
-- matches with others  
-- global knowledge  
+- **Visual style:** minimalist, clean silhouettes, symbolic details.
+- **Core screens:** dig view (grid), artifact journal, comparison view, discovery feed.
+- **Matching UX:** ghost overlays, highlighted edges, suggested connections.
 
 ---
 
-## 5.3 Reinterpretation
+## 10. Monetization Principles
 
-When new fragments connect:
-- previous interpretations may change  
-- player is notified  
-
-> Key emotional moment:  
-> “I was wrong.”
+If/when monetized: **do not sell answers, do not block thinking.** Cosmetics, soft energy limits, and helper boosts are acceptable; paying to skip interpretation or to auto-solve artifacts is not.
 
 ---
 
-# 6. Async Social System
-
-## 6.1 Philosophy
-
-- No forced multiplayer  
-- No real-time dependency  
-- Collaboration emerges naturally  
-
----
-
-## 6.2 Matching System
-
-### Automatic Detection
-
-System detects:
-- shape similarity  
-- semantic overlap  
-
----
-
-### Player Feedback
-
-Player sees:
-- “Possible match exists”  
-- “Similar fragment found”  
-
----
-
-### Interaction Options
-
-- View overlay  
-- Compare fragments  
-- Accept match  
-
----
-
-## 6.3 Passive Collaboration
-
-Even without interaction:
-- system aggregates discoveries  
-- unlocks shared insights  
-
----
-
-## 6.4 Discovery Feed
-
-Examples:
-- “Player X discovered a rare fragment”  
-- “A new connection was found”  
-
----
-
-## 6.5 Optional Friend Features
-
-- share fragments  
-- send helper bots  
-- compare journals  
-
----
-
-# 7. Helper System
-
-## 7.1 Concept
-
-Players can receive temporary helpers.
-
----
-
-## 7.2 Types
-
-- Excavator → faster digging  
-- Scanner → reveals hidden fragments  
-- Preserver → reduces damage risk  
-
----
-
-## 7.3 Behavior
-
-- time-limited  
-- automated actions  
-- no decision-making  
-
----
-
-# 8. Progression System
-
-## 8.1 Player Skills
-
-- Excavation → larger dig area  
-- Analysis → better hints  
-- Preservation → safer excavation  
-
----
-
-## 8.2 Knowledge Progression
-
-- symbol decoding  
-- cultural understanding  
-- pattern recognition  
-
----
-
-## 8.3 Layer Progression
-
-- deeper layers unlock over time  
-- deeper = more complex artifacts  
-
----
-
-# 9. Content Structure
-
-## 9.1 Initial Scope
-
-- 1 culture  
-- 20–40 artifacts  
-- 100–200 fragments  
-- 3–5 layers  
-
----
-
-## 9.2 Artifact Clusters
-
-- burial practices  
-- tools  
-- symbolic language  
-- ritual objects  
-
----
-
-## 9.3 Connection Density
-
-Each artifact connects to:
-- 2–5 others  
-
----
-
-# 10. UX & Presentation
-
-## 10.1 Visual Style
-
-- minimalist  
-- clean silhouettes  
-- symbolic details  
-
----
-
-## 10.2 Core Screens
-
-- Dig view (grid)  
-- Artifact journal  
-- Comparison view  
-- Discovery feed  
-
----
-
-## 10.3 Matching UX
-
-- ghost overlays  
-- highlight edges  
-- suggest connections  
-
----
-
-# 11. Monetization (Optional)
-
-## 11.1 Principles
-
-- Do not sell answers  
-- Do not block thinking  
-
----
-
-## 11.2 Options
-
-- energy (soft limit)  
-- helper upgrades  
-- analysis boosts  
-- cosmetics  
-
----
-
-# 12. Technical Considerations
-
-## 12.1 Backend
-
-- artifact graph storage  
-- fragment distribution  
-- match detection  
-- async communication  
-
----
-
-## 12.2 Client
-
-- simple grid rendering  
-- reusable UI  
-- minimal animation  
-
----
-
-# 13. MVP Definition
-
-## 13.1 Must Have
-
-- digging system  
-- fragment discovery  
-- artifact journal  
-- basic matching  
-- hint system  
-
----
-
-## 13.2 Nice to Have
-
-- async sharing  
-- helper system  
-- discovery feed  
-
----
-
-## 13.3 Not Needed Initially
-
-- real-time multiplayer  
-- guilds  
-- complex economy  
-
----
-
-# 14. Success Criteria
-
-- players form interpretations  
-- players experience “aha” moments  
-- players care about connections  
-- players share discoveries  
-
----
-
-# 15. Design Pillars
-
-1. Discovery over collection  
-2. Interpretation over certainty  
-3. Connection over completion  
-4. Simplicity in input, depth in meaning  
+## 11. Success Criteria
+
+- Players form their own interpretations.
+- Players experience "aha" moments.
+- Players care about the connections, not just the count.
+- Players share discoveries.
