@@ -23,8 +23,6 @@ public partial class PingSystem : Node2D
 	[Export] public float FadeMs { get; set; } = 600f;
 	// Probability per dig of producing a fake ping instead of a real one.
 	[Export] public float FakePingChance { get; set; } = 0.05f;
-	// Flip on in the inspector to log ping decisions to the Godot console.
-	[Export] public bool DebugLogging { get; set; } = false;
 
 	private Grid? _grid;
 	private readonly List<Ping> _pings = new();
@@ -60,20 +58,14 @@ public partial class PingSystem : Node2D
 
 		if (_rng.NextDouble() < FakePingChance)
 		{
-			if (DebugLogging) GD.Print($"[Ping] dig=({digX},{digY},{digDepth}) → fake roll hit");
 			FireFakePing(digX, digY);
 			return;
 		}
-
-		int totalFragments = _grid.Fragments.Count;
-		int eligibleFragments = 0;
-		foreach (var f in _grid.Fragments) if (IsFragmentEligibleForPing(f)) eligibleFragments++;
 
 		if (TryFindClosestEligibleCell(digX, digY, digDepth, out Fragment? frag, out int fx, out int fy, out float distance))
 		{
 			float falloff = 1f - (distance / PingRadius);
 			float brightness = PingPeakBrightness * falloff;
-			if (DebugLogging) GD.Print($"[Ping] dig=({digX},{digY},{digDepth}) → real cell=({fx},{fy},{frag!.Depth}) dist={distance:F2} brightness={brightness:F3} eligible={eligibleFragments}/{totalFragments} locked={_pingedCellByFragment.Count}");
 			if (brightness > 0f)
 			{
 				_pings.Add(new Ping { X = fx, Y = fy, PeakBrightness = brightness, ElapsedMs = 0f });
@@ -85,10 +77,6 @@ public partial class PingSystem : Node2D
 				}
 				QueueRedraw();
 			}
-		}
-		else if (DebugLogging)
-		{
-			GD.Print($"[Ping] dig=({digX},{digY},{digDepth}) → no eligible cell in radius {PingRadius}. eligible={eligibleFragments}/{totalFragments} locked={_pingedCellByFragment.Count}");
 		}
 	}
 
