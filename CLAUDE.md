@@ -142,11 +142,13 @@ Tile types (per layer):
 - stone (slower)
 
 Fragments:
-- multi-tile shapes (prototype set: 2x2 square, 3x3 hollow box, plus, corner)
+- multi-tile shapes; each fragment is a randomly grown polyomino with `MinFragmentTiles`..`MaxFragmentTiles` tiles (defaults 4..16)
+- total fragment count per world is a random pick in `MinFragments`..`MaxFragments` (defaults 4..8)
 - each fragment lives entirely on one layer (its `Depth`), and never on layer 0 (topmost)
 - a fragment cell is "exposed" when its own tile's current depth equals the fragment's depth; collection requires all cells exposed; clicking any cell collects the whole fragment
 - collection advances every cell's depth past the fragment (to `Depth + 1`)
 - a buried fragment is "hinted" (ochre on the floor) when any neighbor of the fragment tile is dug past the fragment's depth — so the wall would expose the fragment's layer from the side
+- the predefined `FragmentShape` enum + `Fragment.Template(...)` are kept in `Fragment.cs` but unused; flip back by swapping the spawn body
 
 ---
 
