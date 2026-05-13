@@ -31,7 +31,7 @@ A simple stick-figure on the grid that walks toward whichever tile the player cl
 
 ## Drawing
 
-The figure is rendered in `_Draw` relative to local `(0, 0)`. Because the Node2D's `Position` is the local origin in parent space, the same draw commands follow the character automatically — no `QueueRedraw` needed each frame.
+The figure is rendered in `_Draw` relative to local `(0, 0)`. Because the Node2D's `Position` is the local origin in parent space, position changes follow automatically without redraws — `QueueRedraw` is only called when an animation is in motion (limb positions actually change).
 
 Pieces (all in `BodyColor`):
 
@@ -41,6 +41,30 @@ Pieces (all in `BodyColor`):
 - Legs — two diagonals from the body bottom.
 
 Stroke width is `max(2, TileSize × 0.08)` so the figure stays readable at any tile size the user picks.
+
+### Walk animation
+
+While `Position != _targetPosition`:
+
+- `_walkPhase` advances by `π × (distance / TileSize)` each frame — one half-cycle per tile travelled, so each tile produces one leg lift and the next tile produces the opposite leg.
+- `|sin(_walkPhase)|` drives a vertical bob (`5%` of `TileSize`) — the figure lifts on each step.
+- `max(0, sin(_walkPhase))` and `max(0, -sin(_walkPhase))` shorten the left and right legs respectively, alternating up to `35%` of `legLen` — reads as the leg lifting off the ground.
+
+When the character stops, the legs return to their default length on the next redraw and `QueueRedraw` halts.
+
+### Dig animation
+
+Triggered by `Grid.Dug(x, y, depth)`. Every emit resets `_digElapsedMs` to 0; the animation runs for `DigAnimationMs` (default 300 ms) then auto-clears.
+
+- `digSwing = sin(progress × π)` produces a 0 → 1 → 0 arc over the animation.
+- Both arms lerp from their idle splay toward a straight-down strike pose by `digSwing`.
+- The body crouches by `6%` of `TileSize` at the peak.
+
+Walk and dig animations overlay: while walking, a `Dug` emit just adds the arm strike + crouch on top of the leg lift / bob. There's no state machine — each animation reads its own parameter and contributes additively.
+
+### Tunable
+
+- `DigAnimationMs` — duration of the dig pose (default 300).
 
 ---
 
@@ -63,6 +87,6 @@ Stroke width is `max(2, TileSize × 0.08)` so the figure stays readable at any t
 
 - Gating dig / collect on arrival at the clicked tile
 - Pathfinding (no walls or obstacles considered — character moves in a straight line)
-- Walking animation, idle pose, direction-facing
+- Direction-facing (the figure is symmetric; legs alternate but don't aim)
 - Sound
 - Cancelling a queued scan when a new short click overrides the target
