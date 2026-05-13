@@ -33,6 +33,10 @@ public partial class Grid : Node2D
 	// is shallower than this tile). Used by the hints system to flash the
 	// preventing neighbor(s).
 	[Signal] public delegate void DigBlockedEventHandler(int x, int y);
+	// Fires for every in-bounds click on the grid — regardless of whether the
+	// click ends up digging, collecting, or being blocked. The character
+	// listens for this to move toward the clicked tile.
+	[Signal] public delegate void ClickedEventHandler(int x, int y);
 
 	// Layered world model:
 	//   _layerTypes[x, y, d]  — material at depth d
@@ -214,6 +218,7 @@ public partial class Grid : Node2D
 	public void HandleClick(Vector2I cell)
 	{
 		if (!InBounds(cell.X, cell.Y)) return;
+		EmitSignal(SignalName.Clicked, cell.X, cell.Y);
 		int d = _depth[cell.X, cell.Y];
 		if (d < LayerCount && _fragmentAt[cell.X, cell.Y, d] != null)
 		{
