@@ -24,6 +24,7 @@ No new node or script; the feature is entirely inside `Grid` because it shares s
 - The dig was blocked by the step constraint (`DigBlocked` instead)
 - The clicked tile is bedrock
 - The click resolved as `TryCollectFragment`
+- The caller passes `allowCollapse: false` to `Dig(...)` — used by autodig ([ai-docs/character.md](character.md)) for a deterministic sweep
 
 ---
 

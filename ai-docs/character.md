@@ -19,13 +19,56 @@ A simple stick-figure on the grid that walks toward whichever tile the player cl
 
 ## Behaviour
 
-- **Initial position:** middle-left tile. On `_Ready`, the character snaps to `(0, Grid.Height / 2)`.
+- **Initial position:** middle of the grid. On `_Ready`, the character snaps to `(Grid.Width / 2, Grid.Height / 2)`.
 - **Click handling:** subscribes to `Grid.Clicked` for normal short clicks. Every in-bounds click sets `_targetPosition` to that tile's centre in grid-local coordinates. Out-of-bounds clicks emit nothing, so the character ignores them.
 - **Movement:** `_Process` steps `Position` toward `_targetPosition` by `SpeedTilesPerSecond × TileSize × delta` each frame using `Vector2.MoveToward`. Quick (default 10 tiles/sec) but visibly non-instant.
-- **Scan API** (used by `ExcavationSystem`):
+- **Action API** (all called from `ExcavationSystem`):
   - `RequestScanAt(cell)` — sets `_targetPosition` and marks `_scanPendingOnArrival = true`. When the character arrives (now or after walking), `_Process` calls `Grid.TriggerScan(x, y, depth)`. Used for the long-click gesture.
   - `RequestScanHere()` — immediately calls `Grid.TriggerScan(...)` for the character's current tile and that tile's depth, no walking. Used for the `S` key.
+  - `RequestStep(dx, dy)` — set the target one tile in the given direction from `CurrentTile()`, but **only when the character has arrived at its current target** (`Position == _targetPosition`). Without that guard a single tap registers as two tiles, because `CurrentTile()` flips at the half-way point and the next poll would push the target forward again. The guard alone isn't enough though — see the continuous-step threshold in `ExcavationSystem` below.
+  - `RequestCollect()` — calls `Grid.TryCollectFragment` for the character's current tile. No-op if no fragment / not fully exposed (the grid validates). Used by the C-key trigger.
+  - `RequestDigAround()` — fills `_digQueue` with the under-tile first, then the ring **anti-clockwise from east** (E → NE → N → NW → W → SW → S → SE; out-of-bounds dropped). Drains the queue in `_Process` one tile at a time on a `DigAnimationMs` cadence. Re-pressing `D` resets the queue.
+
+#### Autodig rules
+
+For each tile in the queue, every `DigAnimationMs`:
+
+1. If a fragment cell sits at the tile's current depth (`Grid.HasFragmentAt`) — drop the tile silently. The player should collect it manually rather than have autodig grind through it.
+2. Otherwise call `Grid.Dig(cell, allowCollapse: false)` and branch on its `DigResult`:
+   - `Cleared` — depth advanced; drop the tile.
+   - `Damaged` — stone took its first of two HP hits; keep the tile at the head of the queue for another pass.
+   - `Blocked` — bedrock, out-of-bounds, or step-constraint blocked. Drop the tile. When the block is the step constraint, `Grid.Dig` has already emitted `DigBlocked`, so the hint system flashes the preventing neighbour red — same feedback as a manual blocked dig.
+
+Random collapse is suppressed (`allowCollapse: false`) so the sweep stays deterministic.
+
+This naturally gives one animation per HP hit — soil tiles get one strike, stone tiles get two — and the queue moves on as each layer is cleared.
 - **Independence from digging:** the short click that moves the character also fires `Grid.HandleClick` (dig / collect). The character may still be in motion while the dig has already resolved — gating dig on arrival is a future phase.
+
+### Keyboard commands (handled by `ExcavationSystem`)
+
+| Key | Action |
+|---|---|
+| `S` | Scan at the character's current tile (via `RequestScanHere`). |
+| `D` | Dig the under-tile + 8 neighbors one-by-one (via `RequestDigAround`). |
+| `C` | Collect a fragment at the character's current tile if it's fully exposed (via `RequestCollect`). |
+| Arrow keys | Step one tile per press. Holding longer than `ContinuousStepHoldMs` (default 250 ms) chains continuous steps; combinations move diagonally. |
+
+#### Why the continuous-step threshold
+
+A single tap should reliably move the character exactly one tile. The arrival frame is the problem: when a tile's walk time is shorter than the tap (~100 ms vs typical 100–200 ms taps), the poll on the arrival frame sees the key still pressed, the `RequestStep` guard passes (`Position == _targetPosition` just became true), and a second step fires — the player gets two tiles for a single intended tap.
+
+`ExcavationSystem` solves this with two pieces of state:
+
+- `_lastArrowDir` — the arrow direction polled last frame.
+- `_arrowPressedAtMs` — when the current press began.
+
+The polling logic:
+
+1. **Press transition or direction change** (`wasIdle || dir != _lastArrowDir`): fire one step immediately, reset `_arrowPressedAtMs`.
+2. **Same direction held** for less than `ContinuousStepHoldMs`: don't fire — the guard would let it through, so we explicitly block it. Single taps stop after one tile no matter how the walk-time and tap-duration line up.
+3. **Same direction held** for at least `ContinuousStepHoldMs`: fire each frame the polling sees the key. The `RequestStep` guard ensures only arrival frames actually advance the target, so the character chains tiles seamlessly.
+
+Default 250 ms keeps natural taps below the threshold while making "intentional hold" feel responsive. Continuous mode does have a short idle pause (`ContinuousStepHoldMs − tileWalkMs`) before kicking in, then runs at the walk speed.
 
 ---
 

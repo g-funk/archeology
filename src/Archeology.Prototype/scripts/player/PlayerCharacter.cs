@@ -1,4 +1,5 @@
 using Godot;
+using System.Collections.Generic;
 
 namespace Archeology.Prototype;
 
@@ -27,6 +28,10 @@ public partial class PlayerCharacter : Node2D
 	private float _walkPhase;
 	// Elapsed time inside the current dig animation; <0 means idle.
 	private float _digElapsedMs = -1f;
+	// Queue of tiles to dig from `RequestDigAround`; one tile is consumed
+	// every `DigAnimationMs` so each tile gets its own animation.
+	private readonly List<Vector2I> _digQueue = new();
+	private float _digQueueTimer;
 
 	public override void _Ready()
 	{
@@ -37,8 +42,8 @@ public partial class PlayerCharacter : Node2D
 			return;
 		}
 
-		// Start on the middle tile of the left edge.
-		var startCell = new Vector2I(0, _grid.Height / 2);
+		// Start on the middle tile of the grid.
+		var startCell = new Vector2I(_grid.Width / 2, _grid.Height / 2);
 		Position = CellCenter(startCell);
 		_targetPosition = Position;
 
@@ -77,6 +82,66 @@ public partial class PlayerCharacter : Node2D
 		_grid.TriggerScan(cell.X, cell.Y, _grid.GetDepth(cell.X, cell.Y));
 	}
 
+	// Try to collect a fragment at the character's current tile. No-op when
+	// there's no fragment or it isn't fully exposed — `Grid.TryCollectFragment`
+	// already validates both. Used by the C-key trigger.
+	public void RequestCollect()
+	{
+		if (_grid == null) return;
+		_grid.TryCollectFragment(CurrentTile());
+	}
+
+	// Step one tile in the given direction. Only retargets when the character
+	// has finished its current step — otherwise mid-walk taps would double up
+	// (the target advances as `CurrentTile()` flips at the half-way point).
+	// Holding the key works fine: the next arrival re-fires from polling.
+	public void RequestStep(int dx, int dy)
+	{
+		if (_grid == null) return;
+		if (Position != _targetPosition) return;
+		var cur = CurrentTile();
+		int nx = cur.X + dx;
+		int ny = cur.Y + dy;
+		if (!_grid.InBounds(nx, ny)) return;
+		_targetPosition = CellCenter(new Vector2I(nx, ny));
+	}
+
+	// Queue the tile under the character and its 8 neighbors for sequential
+	// digging — one tile per `DigAnimationMs` so the dig animation fires for
+	// each. Order: center first, then the ring anti-clockwise from east
+	// (E → NE → N → NW → W → SW → S → SE). Re-pressing D resets the queue
+	// to the character's current tile.
+	public void RequestDigAround()
+	{
+		if (_grid == null) return;
+		_digQueue.Clear();
+		var center = CurrentTile();
+		if (_grid.InBounds(center.X, center.Y)) _digQueue.Add(center);
+
+		// Anti-clockwise from east. In Godot screen coords +Y is down, so a
+		// negative dy means "north" on the player's view.
+		var ring = new Vector2I[]
+		{
+			new(1, 0),   // East
+			new(1, -1),  // North-East
+			new(0, -1),  // North
+			new(-1, -1), // North-West
+			new(-1, 0),  // West
+			new(-1, 1),  // South-West
+			new(0, 1),   // South
+			new(1, 1),   // South-East
+		};
+		foreach (var dir in ring)
+		{
+			int nx = center.X + dir.X;
+			int ny = center.Y + dir.Y;
+			if (_grid.InBounds(nx, ny)) _digQueue.Add(new Vector2I(nx, ny));
+		}
+
+		// Set the timer at full so the first tile fires on the very next _Process.
+		_digQueueTimer = DigAnimationMs;
+	}
+
 	private Vector2I CurrentTile()
 	{
 		if (_grid == null) return Vector2I.Zero;
@@ -111,6 +176,38 @@ public partial class PlayerCharacter : Node2D
 		{
 			_digElapsedMs += (float)(delta * 1000.0);
 			if (_digElapsedMs >= DigAnimationMs) _digElapsedMs = -1f;
+		}
+
+		// Advance the dig-queue: one hit per DigAnimationMs interval. Stone
+		// takes two hits before its depth advances, so a `Damaged` result keeps
+		// the tile at the head of the queue. `Blocked` (step constraint) still
+		// emits `Grid.DigBlocked`, so the hint system flashes the preventing
+		// neighbours red — same feedback as a manual blocked dig.
+		// Random collapse is suppressed for autodig digs (deterministic sweep).
+		if (_digQueue.Count > 0)
+		{
+			_digQueueTimer += (float)(delta * 1000.0);
+			if (_digQueueTimer >= DigAnimationMs)
+			{
+				_digQueueTimer = 0f;
+				var cell = _digQueue[0];
+				int d = _grid.GetDepth(cell.X, cell.Y);
+				// Skip silently when a fragment cell sits at the current depth —
+				// the player should collect it manually, not grind through it.
+				if (_grid.HasFragmentAt(cell.X, cell.Y, d))
+				{
+					_digQueue.RemoveAt(0);
+				}
+				else
+				{
+					var result = _grid.Dig(cell, allowCollapse: false);
+					if (result != Grid.DigResult.Damaged)
+					{
+						_digQueue.RemoveAt(0);
+					}
+					// Damaged: stone HP--; retry next interval.
+				}
+			}
 		}
 
 		// Animation requires a fresh draw while limbs are in motion or the dig

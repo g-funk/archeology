@@ -12,6 +12,11 @@ public partial class ExcavationSystem : Node
 	[Export] public NodePath PlayerCharacterPath { get; set; } = new("../Grid/PlayerCharacter");
 	// Mouse-button hold duration (in seconds) that flips a click into a long-press.
 	[Export] public float LongPressSeconds { get; set; } = 0.4f;
+	// Arrow-key hold duration (in ms) before continuous stepping kicks in.
+	// The first step fires immediately on a press; further steps from the same
+	// hold require this threshold so taps reliably move just one tile even when
+	// the character finishes its walk while the key is still held.
+	[Export] public float ContinuousStepHoldMs { get; set; } = 250f;
 
 	private Grid? _grid;
 	private PlayerCharacter? _character;
@@ -20,6 +25,9 @@ public partial class ExcavationSystem : Node
 	private ulong _mouseDownTimeMs;
 	private Vector2I _mouseDownCell;
 	private bool _longPressTriggered;
+
+	private (int X, int Y) _lastArrowDir;
+	private ulong _arrowPressedAtMs;
 
 	public override void _Ready()
 	{
@@ -64,24 +72,68 @@ public partial class ExcavationSystem : Node
 			return;
 		}
 
-		if (@event is InputEventKey key && key.Pressed && !key.Echo && key.Keycode == Key.S)
+		if (@event is InputEventKey key && key.Pressed && !key.Echo)
 		{
-			_character?.RequestScanHere();
+			if (key.Keycode == Key.S) _character?.RequestScanHere();
+			else if (key.Keycode == Key.D) _character?.RequestDigAround();
+			else if (key.Keycode == Key.C) _character?.RequestCollect();
 		}
 	}
 
 	public override void _Process(double delta)
 	{
-		if (!_mouseDown || _longPressTriggered || _character == null || _grid == null) return;
+		if (_grid == null) return;
 
-		ulong elapsedMs = Time.GetTicksMsec() - _mouseDownTimeMs;
-		if (elapsedMs >= (ulong)(LongPressSeconds * 1000f))
+		// Long-press latches mid-hold as soon as the threshold is crossed.
+		if (_mouseDown && !_longPressTriggered && _character != null)
 		{
-			_longPressTriggered = true;
-			if (_grid.InBounds(_mouseDownCell.X, _mouseDownCell.Y))
+			ulong elapsedMs = Time.GetTicksMsec() - _mouseDownTimeMs;
+			if (elapsedMs >= (ulong)(LongPressSeconds * 1000f))
 			{
-				_character.RequestScanAt(_mouseDownCell);
+				_longPressTriggered = true;
+				if (_grid.InBounds(_mouseDownCell.X, _mouseDownCell.Y))
+				{
+					_character.RequestScanAt(_mouseDownCell);
+				}
 			}
+		}
+
+		// Arrow keys:
+		//   • Press transition (or direction change) → one step immediately.
+		//   • Same direction held ≥ ContinuousStepHoldMs → keep stepping
+		//     (RequestStep's guard limits firing to tile arrivals).
+		//   • Pure release → idle; next press is treated as a fresh press.
+		//
+		// Without the threshold, a tap longer than one tile's walk time (~100 ms
+		// at default speed) would land an extra step on the arrival frame.
+		if (_character != null)
+		{
+			int dx = 0, dy = 0;
+			if (Input.IsKeyPressed(Key.Left)) dx -= 1;
+			if (Input.IsKeyPressed(Key.Right)) dx += 1;
+			if (Input.IsKeyPressed(Key.Up)) dy -= 1;
+			if (Input.IsKeyPressed(Key.Down)) dy += 1;
+
+			var dir = (dx, dy);
+			bool isIdle = dx == 0 && dy == 0;
+			bool wasIdle = _lastArrowDir.X == 0 && _lastArrowDir.Y == 0;
+			bool isNewDirection = !isIdle && (wasIdle || dir != _lastArrowDir);
+
+			if (isNewDirection)
+			{
+				_character.RequestStep(dx, dy);
+				_arrowPressedAtMs = Time.GetTicksMsec();
+			}
+			else if (!isIdle)
+			{
+				ulong heldMs = Time.GetTicksMsec() - _arrowPressedAtMs;
+				if (heldMs >= (ulong)ContinuousStepHoldMs)
+				{
+					_character.RequestStep(dx, dy);
+				}
+			}
+
+			_lastArrowDir = dir;
 		}
 	}
 }
