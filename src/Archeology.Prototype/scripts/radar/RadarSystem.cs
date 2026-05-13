@@ -3,10 +3,12 @@ using System.Collections.Generic;
 
 namespace Archeology.Prototype;
 
-// Sonar-like directional scan. Triggered by `Grid.Dug` (same as ping). An
-// expanding ring grows out from the dig and fades by the time it reaches
-// `ScanRadius`. For each eligible fragment within that radius, a brighter
-// wedge highlights the 2D direction toward the fragment's closest cell.
+// Sonar-like directional scan. Triggered by `Grid.ScanTriggered` (which fires
+// when the player presses S or when the character arrives at a long-pressed
+// tile). An expanding ring grows out from the scan origin and fades by the
+// time it reaches `ScanRadius`. For each eligible fragment within that
+// radius, a brighter wedge highlights the 2D direction toward the fragment's
+// closest cell.
 //
 // Child of `Grid` so local coords match grid space and the draw is composited
 // on top of floors and walls.
@@ -48,10 +50,10 @@ public partial class RadarSystem : Node2D
 			GD.PushError($"RadarSystem: could not resolve Grid at '{GridPath}'.");
 			return;
 		}
-		_grid.Dug += OnDug;
+		_grid.ScanTriggered += OnScanTriggered;
 	}
 
-	private void OnDug(int digX, int digY, int digDepth)
+	private void OnScanTriggered(int digX, int digY, int digDepth)
 	{
 		if (_grid == null) return;
 

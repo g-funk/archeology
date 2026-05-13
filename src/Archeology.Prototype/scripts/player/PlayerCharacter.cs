@@ -19,6 +19,8 @@ public partial class PlayerCharacter : Node2D
 
 	private Grid? _grid;
 	private Vector2 _targetPosition;
+	// Set by RequestScanAt; flips false once a scan fires on arrival.
+	private bool _scanPendingOnArrival;
 
 	public override void _Ready()
 	{
@@ -39,7 +41,34 @@ public partial class PlayerCharacter : Node2D
 
 	private void OnClicked(int x, int y)
 	{
+		// A normal click moves the character but does not queue a scan; the
+		// short-click path runs `Grid.HandleClick` for dig/collect side-effects.
 		_targetPosition = CellCenter(new Vector2I(x, y));
+	}
+
+	// Walk to this cell, then fire a scan from it once arrived. Used by the
+	// long-press input gesture in ExcavationSystem.
+	public void RequestScanAt(Vector2I cell)
+	{
+		_targetPosition = CellCenter(cell);
+		_scanPendingOnArrival = true;
+	}
+
+	// Fire a scan from the character's current tile immediately, no walking.
+	// Used by the S-key trigger.
+	public void RequestScanHere()
+	{
+		if (_grid == null) return;
+		var cell = CurrentTile();
+		_grid.TriggerScan(cell.X, cell.Y, _grid.GetDepth(cell.X, cell.Y));
+	}
+
+	private Vector2I CurrentTile()
+	{
+		if (_grid == null) return Vector2I.Zero;
+		return new Vector2I(
+			(int)Mathf.Floor(Position.X / _grid.TileSize),
+			(int)Mathf.Floor(Position.Y / _grid.TileSize));
 	}
 
 	private Vector2 CellCenter(Vector2I cell)
@@ -51,9 +80,20 @@ public partial class PlayerCharacter : Node2D
 	public override void _Process(double delta)
 	{
 		if (_grid == null) return;
-		if (Position == _targetPosition) return;
-		float maxStep = SpeedTilesPerSecond * _grid.TileSize * (float)delta;
-		Position = Position.MoveToward(_targetPosition, maxStep);
+
+		if (Position != _targetPosition)
+		{
+			float maxStep = SpeedTilesPerSecond * _grid.TileSize * (float)delta;
+			Position = Position.MoveToward(_targetPosition, maxStep);
+		}
+
+		// On arrival (now or already), fire any pending scan.
+		if (_scanPendingOnArrival && Position == _targetPosition)
+		{
+			_scanPendingOnArrival = false;
+			var cell = CurrentTile();
+			_grid.TriggerScan(cell.X, cell.Y, _grid.GetDepth(cell.X, cell.Y));
+		}
 		// No QueueRedraw needed: the figure is drawn at local (0,0); changing
 		// Position re-transforms the cached draw automatically.
 	}

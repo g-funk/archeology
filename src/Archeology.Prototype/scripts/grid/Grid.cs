@@ -37,6 +37,9 @@ public partial class Grid : Node2D
 	// click ends up digging, collecting, or being blocked. The character
 	// listens for this to move toward the clicked tile.
 	[Signal] public delegate void ClickedEventHandler(int x, int y);
+	// Fires when the player triggers a scan (S key, or long-click arrival).
+	// Carries the tile the scan emanates from and that tile's current depth.
+	[Signal] public delegate void ScanTriggeredEventHandler(int x, int y, int depth);
 
 	// Layered world model:
 	//   _layerTypes[x, y, d]  — material at depth d
@@ -208,9 +211,39 @@ public partial class Grid : Node2D
 	public Vector2I WorldToCell(Vector2 worldPosition)
 	{
 		var local = ToLocal(worldPosition);
-		return new Vector2I(
-			(int)Math.Floor(local.X / TileSize),
-			(int)Math.Floor(local.Y / TileSize));
+		int rawX = (int)Math.Floor(local.X / TileSize);
+		int rawY = (int)Math.Floor(local.Y / TileSize);
+		var raw = new Vector2I(rawX, rawY);
+		if (!InBounds(rawX, rawY)) return raw;
+
+		// Walls live inside the deeper tile's outer pixels (see DrawWalls). A
+		// click that lands on a wall reads visually as the shallow neighbor's
+		// edge, so map those pixels to that neighbor instead — the tile the
+		// player almost certainly intended.
+		int d = _depth[rawX, rawY];
+		float lx = local.X - rawX * TileSize;
+		float ly = local.Y - rawY * TileSize;
+		int unit = Math.Max(2, TileSize / 10);
+		ReadOnlySpan<(int dx, int dy)> dirs = stackalloc (int, int)[]
+		{
+			(1, 0), (-1, 0), (0, 1), (0, -1)
+		};
+		foreach (var (dx, dy) in dirs)
+		{
+			int nx = rawX + dx;
+			int ny = rawY + dy;
+			if (!InBounds(nx, ny)) continue;
+			int nd = _depth[nx, ny];
+			if (d <= nd) continue; // no wall here — neighbor isn't shallower
+			float wallSize = unit * (d - nd);
+			bool inWall =
+				(dx == 1 && lx >= TileSize - wallSize) ||
+				(dx == -1 && lx < wallSize) ||
+				(dy == 1 && ly >= TileSize - wallSize) ||
+				(dy == -1 && ly < wallSize);
+			if (inWall) return new Vector2I(nx, ny);
+		}
+		return raw;
 	}
 
 	// Single click entry point. If a fragment cell is at the current depth,
@@ -226,6 +259,12 @@ public partial class Grid : Node2D
 			return;
 		}
 		Dig(cell);
+	}
+
+	// Player-triggered scan emit. The radar listens for ScanTriggered.
+	public void TriggerScan(int x, int y, int depth)
+	{
+		EmitSignal(SignalName.ScanTriggered, x, y, depth);
 	}
 
 	// Damage the current layer's HP, advancing depth when it drains to zero.

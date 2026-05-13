@@ -20,9 +20,12 @@ A simple stick-figure on the grid that walks toward whichever tile the player cl
 ## Behaviour
 
 - **Initial position:** middle-left tile. On `_Ready`, the character snaps to `(0, Grid.Height / 2)`.
-- **Click handling:** subscribes to `Grid.Clicked`. Every in-bounds click sets `_targetPosition` to that tile's centre in grid-local coordinates. Out-of-bounds clicks emit nothing, so the character ignores them.
+- **Click handling:** subscribes to `Grid.Clicked` for normal short clicks. Every in-bounds click sets `_targetPosition` to that tile's centre in grid-local coordinates. Out-of-bounds clicks emit nothing, so the character ignores them.
 - **Movement:** `_Process` steps `Position` toward `_targetPosition` by `SpeedTilesPerSecond × TileSize × delta` each frame using `Vector2.MoveToward`. Quick (default 10 tiles/sec) but visibly non-instant.
-- **Independence from digging:** the click that moves the character also fires the existing `Dig` / `TryCollectFragment` path inside `Grid.HandleClick`. The character may still be in motion while the dig has already resolved — gating dig on arrival is a future phase.
+- **Scan API** (used by `ExcavationSystem`):
+  - `RequestScanAt(cell)` — sets `_targetPosition` and marks `_scanPendingOnArrival = true`. When the character arrives (now or after walking), `_Process` calls `Grid.TriggerScan(x, y, depth)`. Used for the long-click gesture.
+  - `RequestScanHere()` — immediately calls `Grid.TriggerScan(...)` for the character's current tile and that tile's depth, no walking. Used for the `S` key.
+- **Independence from digging:** the short click that moves the character also fires `Grid.HandleClick` (dig / collect). The character may still be in motion while the dig has already resolved — gating dig on arrival is a future phase.
 
 ---
 
@@ -62,3 +65,4 @@ Stroke width is `max(2, TileSize × 0.08)` so the figure stays readable at any t
 - Pathfinding (no walls or obstacles considered — character moves in a straight line)
 - Walking animation, idle pose, direction-facing
 - Sound
+- Cancelling a queued scan when a new short click overrides the target
