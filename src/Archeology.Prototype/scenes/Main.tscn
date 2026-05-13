@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://bvhleaovejbgc" path="res://scripts/player/CameraController.cs" id="4_camera"]
 [ext_resource type="Script" uid="uid://bmtlyodndclh4" path="res://scripts/hints/HintsSystem.cs" id="6_hints"]
 [ext_resource type="Script" path="res://scripts/radar/RadarSystem.cs" id="7_radar"]
+[ext_resource type="Script" path="res://scripts/player/PlayerCharacter.cs" id="8_player"]
 
 [node name="Main" type="Node2D" unique_id=1950256312]
 
@@ -22,6 +23,9 @@ script = ExtResource("6_hints")
 
 [node name="RadarSystem" type="Node2D" parent="Grid"]
 script = ExtResource("7_radar")
+
+[node name="PlayerCharacter" type="Node2D" parent="Grid"]
+script = ExtResource("8_player")
 
 [node name="ExcavationSystem" type="Node" parent="." unique_id=570293015]
 script = ExtResource("2_dig")
