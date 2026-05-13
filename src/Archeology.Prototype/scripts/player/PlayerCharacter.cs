@@ -3,8 +3,8 @@ using Godot;
 namespace Archeology.Prototype;
 
 // The archaeologist — a simple stick-figure that walks toward whatever tile
-// the player clicks. Phase 1: cosmetic only; the click still drives the
-// existing dig / collect behavior independently.
+// the player clicks. Animates walking (vertical bob + alternating leg lift)
+// and digging (brief crouch + arms swing down) — see _Draw.
 //
 // Child of `Grid` so its `Position` is in grid-local coordinates: drawing at
 // local (0, 0) puts the figure exactly at its current `Position`.
@@ -16,11 +16,17 @@ public partial class PlayerCharacter : Node2D
 	[Export] public float SpeedTilesPerSecond { get; set; } = 10f;
 	// Body / outline colour. Light cream so the figure reads against earthy floors.
 	[Export] public Color BodyColor { get; set; } = new Color(0.95f, 0.92f, 0.85f);
+	// Duration of one dig pose, in milliseconds. The pose ramps in and back out.
+	[Export] public float DigAnimationMs { get; set; } = 300f;
 
 	private Grid? _grid;
 	private Vector2 _targetPosition;
 	// Set by RequestScanAt; flips false once a scan fires on arrival.
 	private bool _scanPendingOnArrival;
+	// Advances by π per tile travelled — so one half-cycle (one leg lift) per tile.
+	private float _walkPhase;
+	// Elapsed time inside the current dig animation; <0 means idle.
+	private float _digElapsedMs = -1f;
 
 	public override void _Ready()
 	{
@@ -37,6 +43,7 @@ public partial class PlayerCharacter : Node2D
 		_targetPosition = Position;
 
 		_grid.Clicked += OnClicked;
+		_grid.Dug += OnDug;
 	}
 
 	private void OnClicked(int x, int y)
@@ -44,6 +51,13 @@ public partial class PlayerCharacter : Node2D
 		// A normal click moves the character but does not queue a scan; the
 		// short-click path runs `Grid.HandleClick` for dig/collect side-effects.
 		_targetPosition = CellCenter(new Vector2I(x, y));
+	}
+
+	private void OnDug(int x, int y, int depth)
+	{
+		// Every Dug emit re-arms (or extends) the dig pose.
+		_digElapsedMs = 0f;
+		QueueRedraw();
 	}
 
 	// Walk to this cell, then fire a scan from it once arrived. Used by the
@@ -81,11 +95,27 @@ public partial class PlayerCharacter : Node2D
 	{
 		if (_grid == null) return;
 
-		if (Position != _targetPosition)
+		bool wasMoving = Position != _targetPosition;
+		if (wasMoving)
 		{
+			var oldPos = Position;
 			float maxStep = SpeedTilesPerSecond * _grid.TileSize * (float)delta;
 			Position = Position.MoveToward(_targetPosition, maxStep);
+			float traveled = (Position - oldPos).Length();
+			// π per tile travelled → one leg lift per tile, alternating legs.
+			_walkPhase = Mathf.PosMod(_walkPhase + traveled / _grid.TileSize * Mathf.Pi, Mathf.Pi * 2f);
 		}
+
+		bool digging = _digElapsedMs >= 0f;
+		if (digging)
+		{
+			_digElapsedMs += (float)(delta * 1000.0);
+			if (_digElapsedMs >= DigAnimationMs) _digElapsedMs = -1f;
+		}
+
+		// Animation requires a fresh draw while limbs are in motion or the dig
+		// pose is finishing (so the final frame reverts to idle).
+		if (wasMoving || digging) QueueRedraw();
 
 		// On arrival (now or already), fire any pending scan.
 		if (_scanPendingOnArrival && Position == _targetPosition)
@@ -94,8 +124,6 @@ public partial class PlayerCharacter : Node2D
 			var cell = CurrentTile();
 			_grid.TriggerScan(cell.X, cell.Y, _grid.GetDepth(cell.X, cell.Y));
 		}
-		// No QueueRedraw needed: the figure is drawn at local (0,0); changing
-		// Position re-transforms the cached draw automatically.
 	}
 
 	public override void _Draw()
@@ -108,17 +136,44 @@ public partial class PlayerCharacter : Node2D
 		float legLen = t * 0.30f;
 		float lineWidth = Mathf.Max(2f, t * 0.08f);
 
-		// All offsets are relative to local (0,0) so the figure follows Position.
-		var headCenter = new Vector2(0, -bodyH * 0.5f - headRadius);
+		bool moving = Position != _targetPosition;
+		bool digging = _digElapsedMs >= 0f;
+
+		// Walk: gentle upward bob synced to step cadence, alternating leg lift.
+		float walkBob = moving ? Mathf.Abs(Mathf.Sin(_walkPhase)) * t * 0.05f : 0f;
+		float leftLift = moving ? Mathf.Max(0f, Mathf.Sin(_walkPhase)) : 0f;
+		float rightLift = moving ? Mathf.Max(0f, -Mathf.Sin(_walkPhase)) : 0f;
+		float leftLegLen = legLen * (1f - leftLift * 0.35f);
+		float rightLegLen = legLen * (1f - rightLift * 0.35f);
+
+		// Dig: a one-shot arch (0 → 1 → 0) over `DigAnimationMs`. Arms swing
+		// from idle splay toward straight-down; body crouches slightly.
+		float digProgress = digging ? _digElapsedMs / DigAnimationMs : 0f;
+		float digSwing = digging ? Mathf.Sin(digProgress * Mathf.Pi) : 0f;
+		float digCrouch = digSwing * t * 0.06f;
+
+		// Walk lifts upward (-Y); dig pushes downward (+Y).
+		float yOff = -walkBob + digCrouch;
+
+		var headCenter = new Vector2(0, -bodyH * 0.5f - headRadius + yOff);
 		var bodyTop = headCenter + new Vector2(0, headRadius);
 		var bodyBottom = bodyTop + new Vector2(0, bodyH);
 		var shoulders = bodyTop + new Vector2(0, bodyH * 0.15f);
 
 		DrawCircle(headCenter, headRadius, BodyColor);
 		DrawLine(bodyTop, bodyBottom, BodyColor, lineWidth);
-		DrawLine(shoulders, shoulders + new Vector2(-armLen, armLen * 0.5f), BodyColor, lineWidth);
-		DrawLine(shoulders, shoulders + new Vector2(armLen, armLen * 0.5f), BodyColor, lineWidth);
-		DrawLine(bodyBottom, bodyBottom + new Vector2(-legLen * 0.4f, legLen), BodyColor, lineWidth);
-		DrawLine(bodyBottom, bodyBottom + new Vector2(legLen * 0.4f, legLen), BodyColor, lineWidth);
+
+		// Arms: idle splay, lerped toward a straight-down strike during dig.
+		var leftArmIdle = new Vector2(-armLen, armLen * 0.5f);
+		var rightArmIdle = new Vector2(armLen, armLen * 0.5f);
+		var armStrike = new Vector2(0, armLen);
+		var leftArmEnd = digging ? leftArmIdle.Lerp(armStrike, digSwing) : leftArmIdle;
+		var rightArmEnd = digging ? rightArmIdle.Lerp(armStrike, digSwing) : rightArmIdle;
+		DrawLine(shoulders, shoulders + leftArmEnd, BodyColor, lineWidth);
+		DrawLine(shoulders, shoulders + rightArmEnd, BodyColor, lineWidth);
+
+		// Legs: alternating shortened length reads as a step.
+		DrawLine(bodyBottom, bodyBottom + new Vector2(-legLen * 0.4f, leftLegLen), BodyColor, lineWidth);
+		DrawLine(bodyBottom, bodyBottom + new Vector2(legLen * 0.4f, rightLegLen), BodyColor, lineWidth);
 	}
 }
