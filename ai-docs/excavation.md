@@ -56,22 +56,32 @@ If this check fails, `Dig(cell)` emits `DigBlocked(x, y)` and returns — the pl
 
 ## Click flow
 
+`ExcavationSystem` distinguishes **short** and **long** mouse-button presses by `LongPressSeconds` (default 0.4s):
+
 ```
-mouse click
-  └─> ExcavationSystem._UnhandledInput
-        └─> Grid.HandleClick(cell)
-              ├─> Grid.TryCollectFragment(cell)   ← see ai-docs/collection.md
-              │     (handles the case where a fragment cell is exposed at this tile's depth)
-              └─> Grid.Dig(cell)                  ← otherwise
-                    - returns if cell is at bedrock
-                    - returns if CanDigDeeper is false (step constraint blocks)
-                    - decrements _layerHp[x, y, _depth[x, y]]
-                    - emits `Dug(x, y, depth)` after the decrement
-                    - increments _depth[x, y] when HP drains
-                    - rolls random collapse on 4-neighbors (see ai-docs/random_collapse.md)
+mouse down  → record (time, cell)
+mouse up
+  ├─ if held < LongPressSeconds → short click:
+  │     Grid.HandleClick(cell)
+  │       ├─> emits Grid.Clicked(x, y)      ← character moves toward cell
+  │       ├─> Grid.TryCollectFragment(cell) ← if a fragment is at the current depth
+  │       └─> Grid.Dig(cell)                ← otherwise
+  │            - returns at bedrock or step-constraint block (emits DigBlocked)
+  │            - decrements _layerHp, emits Dug(x, y, depth)
+  │            - increments _depth when HP drains
+  │            - rolls random collapse on 4-neighbors (see random_collapse.md)
+  │
+  └─ if held ≥ LongPressSeconds → long press (resolved in _Process the moment the
+        threshold is crossed):
+        PlayerCharacter.RequestScanAt(cell)  ← walks to cell, scans on arrival.
+                                              No dig, no collect.
+
+S key (ExcavationSystem)
+  └─> PlayerCharacter.RequestScanHere()      ← immediate scan at the character's
+                                              current tile, no walking.
 ```
 
-`HandleClick` is the single entry point. The fragment-collection branch is in `Grid.TryCollectFragment` — see [ai-docs/collection.md](collection.md). The `Dug` signal feeds the ping system — see [ai-docs/ping.md](ping.md). After every successful dig, neighbors may also collapse — see [ai-docs/random_collapse.md](random_collapse.md).
+`Grid.HandleClick` is the single entry point for dig/collect. Scans are emitted via `Grid.TriggerScan(x, y, depth)` from `PlayerCharacter` — the radar listens for `Grid.ScanTriggered` ([ai-docs/radar.md](radar.md)). The `Dug` signal still fires from `Dig` but currently has no listener.
 
 ---
 
@@ -107,6 +117,8 @@ Fragment-related states (ochre hint, gold exposed, pale gold fully-exposed) are 
 ### Walls
 
 `DrawWalls()` per design/VISUALS.md: for each tile, for each of the 4 sides, if this tile is **strictly deeper** than the neighbor on that side, paint a wall on this tile's edge.
+
+The wall sits in the deeper tile's outer pixels, so a raw `floor()` of the world position would assign wall-pixel clicks to that deeper tile. `Grid.WorldToCell` corrects for this: when the floor maps to a tile that has a wall on the side the click lands in, the click is re-routed to the **shallow neighbor** on that side — the tile the player almost certainly intended when targeting "the edge".
 
 | Side | Color | Notes |
 |---|---|---|

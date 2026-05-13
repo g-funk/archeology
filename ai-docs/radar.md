@@ -1,9 +1,9 @@
 # Radar
 
-A sonar-like directional scan that fires on each successful dig. An expanding ring grows out from the dig cell and fades by the time it reaches the scan radius. For each unexposed fragment within range, a brighter wedge (~1/8 of the circle) highlights the 2D direction to its closest cell.
+A sonar-like directional scan that the player triggers explicitly. An expanding ring grows out from the scan origin and fades by the time it reaches the scan radius. For each unexposed fragment within range, a brighter wedge (~1/8 of the circle) highlights the 2D direction to its closest cell.
 
 > **Design source:** [`design/features/RADAR.md`](../design/features/RADAR.md)
-> **Built on:** [ai-docs/excavation.md](excavation.md) (the `Grid.Dug` signal) and [ai-docs/collection.md](collection.md) (`Grid.Fragments`)
+> **Built on:** [ai-docs/character.md](character.md) (drives the scan trigger), [ai-docs/excavation.md](excavation.md) (input + the `Grid.ScanTriggered` signal), [ai-docs/collection.md](collection.md) (`Grid.Fragments`)
 
 ---
 
@@ -18,7 +18,12 @@ A sonar-like directional scan that fires on each successful dig. An expanding ri
 
 ## Trigger
 
-`Grid.Dug(x, y, depth)` — exactly the same signal that drives [ping](ping.md). Every successful HP-damage click creates one pulse. Constraint-blocked clicks (`DigBlocked`) and collection clicks do not fire radar.
+`Grid.ScanTriggered(x, y, depth)` — emitted via `Grid.TriggerScan(...)` from `PlayerCharacter`:
+
+- **`S` key** → `PlayerCharacter.RequestScanHere()` immediately calls `Grid.TriggerScan` with the character's current tile and that tile's `_depth`.
+- **Long-click on a tile** → `PlayerCharacter.RequestScanAt(cell)` sets the walk target and marks the scan as pending; once the character arrives (`Position == _targetPosition`), `Grid.TriggerScan` fires.
+
+Digging no longer triggers radar. Constraint-blocked clicks, fragment collection, and `Grid.Dug` are all unrelated to scan now.
 
 ---
 
@@ -72,9 +77,10 @@ Because `RadarSystem` sits after `PingSystem` and `HintsSystem` as a child of `G
 
 ## Cross-feature seam
 
-- `Grid.Dug` is shared with the ping system; both react independently to the same click.
-- Eligibility is shared with the ping system's first rule (`any cell exposed → skip`), but the lock-after-first-ping rule is ping-only. Radar fires on every dig regardless.
-- Collapses are silent (`Dug` doesn't fire for them — see [random_collapse.md](random_collapse.md)), so radar never pulses from a collapse.
+- `Grid.ScanTriggered` is the only signal `RadarSystem` listens to. Future scan triggers (tools, abilities, auto-scans) emit the same signal.
+- Eligibility shares ping's first rule (`any cell exposed → skip`) — the ping-only "lock to first cell" rule does **not** apply here.
+- Long-click sets the character's `_targetPosition` and `_scanPendingOnArrival`; the existing short-click → `Grid.Clicked` → character-moves path is independent. Both gestures move the character, only the long one queues a scan.
+- Random collapses and dig damage no longer affect radar — they don't fire `ScanTriggered`.
 
 ---
 
