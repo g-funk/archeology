@@ -25,7 +25,7 @@ Subtle, transient cues that surface invalid actions. Currently one rule: when th
 - The clicked tile is **not** at bedrock (`d < LayerCount`)
 - `CanDigDeeper(x, y)` returns false — i.e., at least one in-bound 4-neighbor is shallower than this tile's current depth
 
-The signal carries the **clicked** tile's coords; the listener finds the preventing neighbors itself.
+The signal carries the **clicked** tile's coords; the listener finds the preventing neighbors itself. Autodig produces the same signal — when one of its queued tiles is step-blocked, the same red flash fires on the preventing neighbour.
 
 `DigBlocked` does **not** fire for:
 

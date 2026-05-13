@@ -267,27 +267,53 @@ public partial class Grid : Node2D
 		EmitSignal(SignalName.ScanTriggered, x, y, depth);
 	}
 
+	public enum DigResult
+	{
+		// The current layer at this tile cleared; depth advanced.
+		Cleared,
+		// HP at the current layer took a hit but the layer isn't cleared yet.
+		Damaged,
+		// No HP change — out of bounds, bedrock, or step-constraint blocked.
+		// When the step constraint blocks, `DigBlocked` is emitted (same red
+		// flash as manual dig blocks).
+		Blocked,
+	}
+
 	// Damage the current layer's HP, advancing depth when it drains to zero.
 	// Blocked by the "one deeper than surrounds" constraint and by bedrock.
-	public void Dig(Vector2I cell)
+	// `allowCollapse` lets the caller opt out of the random-collapse side
+	// effect (e.g. autodig sweeps the area deterministically).
+	public DigResult Dig(Vector2I cell, bool allowCollapse = true)
 	{
-		if (!InBounds(cell.X, cell.Y)) return;
+		if (!InBounds(cell.X, cell.Y)) return DigResult.Blocked;
 		int d = _depth[cell.X, cell.Y];
-		if (d >= LayerCount) return; // bedrock: no material left
+		if (d >= LayerCount) return DigResult.Blocked; // bedrock: no material left
 		if (!CanDigDeeper(cell.X, cell.Y))
 		{
 			EmitSignal(SignalName.DigBlocked, cell.X, cell.Y);
-			return; // step constraint blocks this dig
+			return DigResult.Blocked; // step constraint blocks this dig
 		}
 
 		_layerHp[cell.X, cell.Y, d]--;
 		EmitSignal(SignalName.Dug, cell.X, cell.Y, d);
+		bool cleared = false;
 		if (_layerHp[cell.X, cell.Y, d] <= 0)
 		{
 			_depth[cell.X, cell.Y] = d + 1;
+			cleared = true;
 		}
-		TryRandomCollapse(cell.X, cell.Y);
+		if (allowCollapse) TryRandomCollapse(cell.X, cell.Y);
 		QueueRedraw();
+		return cleared ? DigResult.Cleared : DigResult.Damaged;
+	}
+
+	// True if there's a fragment overlay at `(x, y, d)`. Autodig consults this
+	// to avoid grinding through buried fragments at the character's depth.
+	public bool HasFragmentAt(int x, int y, int d)
+	{
+		if (!InBounds(x, y)) return false;
+		if (d < 0 || d >= LayerCount) return false;
+		return _fragmentAt[x, y, d] != null;
 	}
 
 	// Each successful dig may take 0..MaxCollapse neighbors with it. Each
