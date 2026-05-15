@@ -33,15 +33,18 @@ A simple stick-figure on the grid that walks toward whichever tile the player cl
 
 For each tile in the queue, every `DigAnimationMs`:
 
-1. If a fragment cell sits at the tile's current depth (`Grid.HasFragmentAt`) — drop the tile silently. The player should collect it manually rather than have autodig grind through it.
-2. Otherwise call `Grid.Dig(cell, allowCollapse: false)` and branch on its `DigResult`:
-   - `Cleared` — depth advanced; drop the tile.
-   - `Damaged` — stone took its first of two HP hits; keep the tile at the head of the queue for another pass.
-   - `Blocked` — bedrock, out-of-bounds, or step-constraint blocked. Drop the tile. When the block is the step constraint, `Grid.Dig` has already emitted `DigBlocked`, so the hint system flashes the preventing neighbour red — same feedback as a manual blocked dig.
+- Call `Grid.Dig(cell, allowCollapse: false)` and branch on its `DigResult`:
+  - `Cleared` — depth advanced; drop the tile.
+  - `Damaged` — stone took its first of two HP hits; keep the tile at the head of the queue for another pass.
+  - `Blocked` — bedrock, fragment at current depth, step-constraint blocked, or out of bounds. Drop the tile. `Grid.Dig` has already emitted `DigBlocked` in the first three cases, so the hint system flashes red feedback (see [ai-docs/hints.md](hints.md) for which tile flashes).
 
 Random collapse is suppressed (`allowCollapse: false`) so the sweep stays deterministic.
 
 This naturally gives one animation per HP hit — soil tiles get one strike, stone tiles get two — and the queue moves on as each layer is cleared.
+
+#### Movement blocked during autodig
+
+`IsAutoDigging` is `true` while `_digQueue.Count > 0`. `OnClicked`, `RequestScanAt`, and `RequestStep` all short-circuit when it's true — clicks, long-clicks, and arrow keys can't move the character during a sweep. `RequestScanHere`, `RequestCollect`, and a fresh `RequestDigAround` are all still allowed (the spec only blocks *movement*, and re-pressing `D` simply restarts the sweep from the same position).
 - **Independence from digging:** the short click that moves the character also fires `Grid.HandleClick` (dig / collect). The character may still be in motion while the dig has already resolved — gating dig on arrival is a future phase.
 
 ### Keyboard commands (handled by `ExcavationSystem`)

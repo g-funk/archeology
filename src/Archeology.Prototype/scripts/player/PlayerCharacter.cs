@@ -51,8 +51,13 @@ public partial class PlayerCharacter : Node2D
 		_grid.Dug += OnDug;
 	}
 
+	// True while an autodig sweep is in progress. Movement inputs are ignored
+	// in that window — the player can't walk while digging.
+	public bool IsAutoDigging => _digQueue.Count > 0;
+
 	private void OnClicked(int x, int y)
 	{
+		if (IsAutoDigging) return;
 		// A normal click moves the character but does not queue a scan; the
 		// short-click path runs `Grid.HandleClick` for dig/collect side-effects.
 		_targetPosition = CellCenter(new Vector2I(x, y));
@@ -69,6 +74,7 @@ public partial class PlayerCharacter : Node2D
 	// long-press input gesture in ExcavationSystem.
 	public void RequestScanAt(Vector2I cell)
 	{
+		if (IsAutoDigging) return;
 		_targetPosition = CellCenter(cell);
 		_scanPendingOnArrival = true;
 	}
@@ -98,6 +104,7 @@ public partial class PlayerCharacter : Node2D
 	public void RequestStep(int dx, int dy)
 	{
 		if (_grid == null) return;
+		if (IsAutoDigging) return;
 		if (Position != _targetPosition) return;
 		var cur = CurrentTile();
 		int nx = cur.X + dx;
@@ -180,33 +187,23 @@ public partial class PlayerCharacter : Node2D
 
 		// Advance the dig-queue: one hit per DigAnimationMs interval. Stone
 		// takes two hits before its depth advances, so a `Damaged` result keeps
-		// the tile at the head of the queue. `Blocked` (step constraint) still
-		// emits `Grid.DigBlocked`, so the hint system flashes the preventing
-		// neighbours red — same feedback as a manual blocked dig.
-		// Random collapse is suppressed for autodig digs (deterministic sweep).
+		// the tile at the head of the queue. Every other result emits
+		// `Grid.DigBlocked` — so the hint system flashes a red indicator on
+		// the preventing neighbour (step constraint) or on the attempted tile
+		// itself (bedrock, fragment at current depth). Random collapse is
+		// suppressed for autodig digs (deterministic sweep).
 		if (_digQueue.Count > 0)
 		{
 			_digQueueTimer += (float)(delta * 1000.0);
 			if (_digQueueTimer >= DigAnimationMs)
 			{
 				_digQueueTimer = 0f;
-				var cell = _digQueue[0];
-				int d = _grid.GetDepth(cell.X, cell.Y);
-				// Skip silently when a fragment cell sits at the current depth —
-				// the player should collect it manually, not grind through it.
-				if (_grid.HasFragmentAt(cell.X, cell.Y, d))
+				var result = _grid.Dig(_digQueue[0], allowCollapse: false);
+				if (result != Grid.DigResult.Damaged)
 				{
 					_digQueue.RemoveAt(0);
 				}
-				else
-				{
-					var result = _grid.Dig(cell, allowCollapse: false);
-					if (result != Grid.DigResult.Damaged)
-					{
-						_digQueue.RemoveAt(0);
-					}
-					// Damaged: stone HP--; retry next interval.
-				}
+				// Damaged: stone HP--; retry next interval.
 			}
 		}
 
