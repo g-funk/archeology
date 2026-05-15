@@ -42,6 +42,19 @@ public partial class HintsSystem : Node2D
 		if (_grid == null) return;
 
 		int d = _grid.GetDepth(x, y);
+
+		// Bedrock or fragment-at-current-depth: no preventing neighbour exists,
+		// so flash the attempted tile itself — that's "we tried this tile and
+		// couldn't dig it".
+		if (d >= _grid.LayerCount || _grid.HasFragmentAt(x, y, d))
+		{
+			_flashes.Add(new Flash { X = x, Y = y, ElapsedMs = 0f });
+			QueueRedraw();
+			return;
+		}
+
+		// Step constraint: flash every 4-neighbour that's shallower than this tile.
+		bool anyAdded = false;
 		ReadOnlySpan<(int dx, int dy)> n = stackalloc (int, int)[]
 		{
 			(1, 0), (-1, 0), (0, 1), (0, -1)
@@ -53,6 +66,13 @@ public partial class HintsSystem : Node2D
 			if (!_grid.InBounds(nx, ny)) continue;
 			if (_grid.GetDepth(nx, ny) >= d) continue; // not a preventer
 			_flashes.Add(new Flash { X = nx, Y = ny, ElapsedMs = 0f });
+			anyAdded = true;
+		}
+		// Fallback — shouldn't happen for step-blocked digs, but if nothing
+		// flashed, at least flash the attempted tile so the failure is visible.
+		if (!anyAdded)
+		{
+			_flashes.Add(new Flash { X = x, Y = y, ElapsedMs = 0f });
 		}
 		QueueRedraw();
 	}

@@ -287,7 +287,21 @@ public partial class Grid : Node2D
 	{
 		if (!InBounds(cell.X, cell.Y)) return DigResult.Blocked;
 		int d = _depth[cell.X, cell.Y];
-		if (d >= LayerCount) return DigResult.Blocked; // bedrock: no material left
+		if (d >= LayerCount)
+		{
+			// Bedrock — emit `DigBlocked` so the hint flash fires; HintsSystem
+			// knows to flash the attempted tile itself when there's no preventer.
+			EmitSignal(SignalName.DigBlocked, cell.X, cell.Y);
+			return DigResult.Blocked;
+		}
+		if (_fragmentAt[cell.X, cell.Y, d] != null)
+		{
+			// Fragment at the current depth — Dig would grind through it. Manual
+			// clicks route to TryCollectFragment instead (HandleClick), so this
+			// only triggers for direct Dig callers like autodig.
+			EmitSignal(SignalName.DigBlocked, cell.X, cell.Y);
+			return DigResult.Blocked;
+		}
 		if (!CanDigDeeper(cell.X, cell.Y))
 		{
 			EmitSignal(SignalName.DigBlocked, cell.X, cell.Y);

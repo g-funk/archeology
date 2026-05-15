@@ -19,13 +19,13 @@ Subtle, transient cues that surface invalid actions. Currently one rule: when th
 
 ## Trigger
 
-`Grid.DigBlocked(x, y)` fires from `Grid.Dig` when:
+`Grid.DigBlocked(x, y)` fires from `Grid.Dig` in three cases:
 
-- The clicked tile is in bounds
-- The clicked tile is **not** at bedrock (`d < LayerCount`)
-- `CanDigDeeper(x, y)` returns false — i.e., at least one in-bound 4-neighbor is shallower than this tile's current depth
+- **Step constraint** — at least one in-bound 4-neighbor is shallower than this tile's current depth.
+- **Bedrock** — the tile is already at `LayerCount`.
+- **Fragment at current depth** — `Dig` would grind through a fragment.
 
-The signal carries the **clicked** tile's coords; the listener finds the preventing neighbors itself. Autodig produces the same signal — when one of its queued tiles is step-blocked, the same red flash fires on the preventing neighbour.
+In all three cases the signal carries the **attempted** tile's coords. Autodig calls `Grid.Dig` directly and so triggers all three; manual clicks route through `HandleClick`, which deals with the fragment case via `TryCollectFragment` and so only reaches the step-constraint / bedrock branches.
 
 `DigBlocked` does **not** fire for:
 
@@ -39,14 +39,15 @@ The signal carries the **clicked** tile's coords; the listener finds the prevent
 
 `HintsSystem.OnDigBlocked(x, y)`:
 
-1. Read the clicked tile's depth `d = _grid.GetDepth(x, y)`.
-2. For each 4-neighbor `(nx, ny)`:
-   - Skip if out of bounds.
-   - Skip if `_grid.GetDepth(nx, ny) >= d` — not a preventer.
-   - Otherwise add a `Flash` at `(nx, ny)` with `ElapsedMs = 0`.
-3. `QueueRedraw`.
+1. Read the attempted tile's depth `d = _grid.GetDepth(x, y)`.
+2. If the tile is at bedrock (`d >= LayerCount`) or has a fragment at the current depth (`_grid.HasFragmentAt(x, y, d)`) — there's no preventing neighbour to highlight, so flash the **attempted tile itself** and return.
+3. Otherwise (step constraint), iterate the 4-neighbors:
+   - Skip out-of-bounds and any neighbour with `depth >= d` (those aren't preventers).
+   - Add a `Flash` at each shallower neighbour.
+4. If no preventer was found (unusual but defensive), fall back to flashing the attempted tile.
+5. `QueueRedraw`.
 
-All preventing neighbors flash simultaneously. A subsequent blocked click can re-flash the same tile (resets its timer in practice, since a new `Flash` is added on top).
+A subsequent blocked dig can re-flash the same tile (resets its timer in practice, since a new `Flash` is added on top).
 
 ---
 
