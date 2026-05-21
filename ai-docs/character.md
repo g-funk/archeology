@@ -42,9 +42,15 @@ Random collapse is suppressed (`allowCollapse: false`) so the sweep stays determ
 
 This naturally gives one animation per HP hit — soil tiles get one strike, stone tiles get two — and the queue moves on as each layer is cleared.
 
-#### Movement blocked during autodig
+#### Interrupting autodig with a tap
 
-`IsAutoDigging` is `true` while `_digQueue.Count > 0`. `OnClicked`, `RequestScanAt`, and `RequestStep` all short-circuit when it's true — clicks, long-clicks, and arrow keys can't move the character during a sweep. `RequestScanHere`, `RequestCollect`, and a fresh `RequestDigAround` are all still allowed (the spec only blocks *movement*, and re-pressing `D` simply restarts the sweep from the same position).
+Tapping a different tile while `IsAutoDigging` cancels the current sweep and immediately starts the new command:
+- Single tap on another tile → `MoveTo(cell)` (walk, no dig on arrival)
+- Double-tap on another tile → `MoveAndDig(cell)` (walk + autodig on arrival)
+
+`CancelAutodig()` clears `_digQueue` and resets `_digQueueTimer`. Tapping the character's own tile calls `RequestDigAround()` which also clears the queue and restarts from the current position.
+
+`IsAutoDigging` is `true` while `_digQueue.Count > 0`.
 - **Independence from digging:** the short click that moves the character also fires `Grid.HandleClick` (dig / collect). The character may still be in motion while the dig has already resolved — gating dig on arrival is a future phase.
 
 ### Keyboard commands (handled by `ExcavationSystem`)

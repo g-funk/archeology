@@ -4,6 +4,11 @@ Instructions for Claude Code and other coding agents working on the Arkeology pr
 
 > **Guiding principle:** Discovery → Interpretation → Reinterpretation.
 
+## Currently Implementing
+
+Important! At this moment we are building the Arkeology Simple Prototype! Anything that contradicts DESIGN-SIMPLE.md in this or other documents can be ignored.
+
+
 ---
 
 ## Role
@@ -12,6 +17,7 @@ You are a senior C# / Godot engineer. Build a playable prototype that validates 
 
 - **Focus on:** fast iteration, clear structure, gameplay-first implementation.
 - **Avoid:** over-engineering, premature abstraction, systems the prototype doesn't need.
+
 
 ---
 

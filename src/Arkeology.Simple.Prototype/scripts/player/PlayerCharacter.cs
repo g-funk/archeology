@@ -62,23 +62,29 @@ public partial class PlayerCharacter : Node2D
 		QueueRedraw();
 	}
 
-	// Walk to the given cell. No-op during autodig.
+	// Walk to the given cell. Cancels any in-progress autodig.
 	public void MoveTo(Vector2I cell)
 	{
-		if (IsAutoDigging) return;
 		if (_grid == null || !_grid.InBounds(cell.X, cell.Y)) return;
+		CancelAutodig();
 		_targetPosition = CellCenter(cell);
 		_digPendingOnArrival = false;
 	}
 
 	// Walk to the given cell, then fire an autodig sweep on arrival.
-	// Triggered by a double-tap on a remote tile.
+	// Triggered by a double-tap on a remote tile. Cancels any in-progress autodig.
 	public void MoveAndDig(Vector2I cell)
 	{
-		if (IsAutoDigging) return;
 		if (_grid == null || !_grid.InBounds(cell.X, cell.Y)) return;
+		CancelAutodig();
 		_targetPosition = CellCenter(cell);
 		_digPendingOnArrival = true;
+	}
+
+	private void CancelAutodig()
+	{
+		_digQueue.Clear();
+		_digQueueTimer = 0f;
 	}
 
 	// Fire a scan from the character's current tile immediately.
