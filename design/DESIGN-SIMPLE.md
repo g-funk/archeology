@@ -39,6 +39,7 @@ UI is based on portrait orientation mobile
 
 Mobile first, so we'll need to consider touchscreen based interface primarily. For example:
 * Tap - move
+* Double-tap - move + dig (walk to the tile, then autodig on arrival)
 * Tap character - dig
 * Long-tap character - scan
 * Tap fully exposed fragment anywhere - collect

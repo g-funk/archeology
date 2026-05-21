@@ -30,6 +30,8 @@ public partial class PlayerCharacter : Node2D
 	private float _digElapsedMs = -1f;
 	private readonly List<Vector2I> _digQueue = new();
 	private float _digQueueTimer;
+	// Set by MoveAndDig (double-tap). On arrival the character fires an autodig.
+	private bool _digPendingOnArrival;
 
 	public override void _Ready()
 	{
@@ -66,6 +68,17 @@ public partial class PlayerCharacter : Node2D
 		if (IsAutoDigging) return;
 		if (_grid == null || !_grid.InBounds(cell.X, cell.Y)) return;
 		_targetPosition = CellCenter(cell);
+		_digPendingOnArrival = false;
+	}
+
+	// Walk to the given cell, then fire an autodig sweep on arrival.
+	// Triggered by a double-tap on a remote tile.
+	public void MoveAndDig(Vector2I cell)
+	{
+		if (IsAutoDigging) return;
+		if (_grid == null || !_grid.InBounds(cell.X, cell.Y)) return;
+		_targetPosition = CellCenter(cell);
+		_digPendingOnArrival = true;
 	}
 
 	// Fire a scan from the character's current tile immediately.
@@ -146,6 +159,13 @@ public partial class PlayerCharacter : Node2D
 		{
 			_digElapsedMs += (float)(delta * 1000.0);
 			if (_digElapsedMs >= DigAnimationMs) _digElapsedMs = -1f;
+		}
+
+		// Pending move-and-dig fires its autodig once the character arrives.
+		if (_digPendingOnArrival && Position == _targetPosition && _digQueue.Count == 0)
+		{
+			_digPendingOnArrival = false;
+			RequestDigAround();
 		}
 
 		// Autodig queue — one hit per (stamina-scaled) interval.

@@ -17,6 +17,9 @@ public partial class ExcavationSystem : Node
 	[Export] public NodePath PlayerCharacterPath { get; set; } = new("../Grid/PlayerCharacter");
 	// Hold duration (in seconds) that flips a tap into a long-press.
 	[Export] public float LongPressSeconds { get; set; } = 0.4f;
+	// Maximum gap between two move-type taps on the same cell that counts as a
+	// double-tap → move+dig.
+	[Export] public float DoubleTapMs { get; set; } = 300f;
 
 	private Grid? _grid;
 	private PlayerCharacter? _character;
@@ -25,6 +28,13 @@ public partial class ExcavationSystem : Node
 	private ulong _downMs;
 	private Vector2I _downCell;
 	private bool _longResolved;
+
+	// Tracks the previous move-style tap so the next tap can be promoted into a
+	// double-tap (move+dig). Only "move" taps participate — collect / autodig /
+	// scan reset the buffer.
+	private bool _haveLastMoveTap;
+	private ulong _lastMoveTapMs;
+	private Vector2I _lastMoveTapCell;
 
 	public override void _Ready()
 	{
@@ -83,15 +93,35 @@ public partial class ExcavationSystem : Node
 	{
 		if (_grid == null || _character == null) return;
 		// 1. Fully-exposed fragment? Collect (works from anywhere).
-		if (_grid.TryCollectFragment(cell)) return;
+		if (_grid.TryCollectFragment(cell))
+		{
+			_haveLastMoveTap = false;
+			return;
+		}
 		// 2. Tap on the character's tile? Autodig.
 		if (cell == _character.CurrentTile())
 		{
 			_character.RequestDigAround();
+			_haveLastMoveTap = false;
 			return;
 		}
-		// 3. Otherwise walk.
-		_character.MoveTo(cell);
+		// 3. Move-style tap. Check for double-tap on the same cell within the window.
+		ulong now = Time.GetTicksMsec();
+		bool doubleTap = _haveLastMoveTap
+			&& cell == _lastMoveTapCell
+			&& (now - _lastMoveTapMs) <= (ulong)DoubleTapMs;
+		if (doubleTap)
+		{
+			_character.MoveAndDig(cell);
+			_haveLastMoveTap = false;
+		}
+		else
+		{
+			_character.MoveTo(cell);
+			_haveLastMoveTap = true;
+			_lastMoveTapMs = now;
+			_lastMoveTapCell = cell;
+		}
 	}
 
 	private void HandleLongPress(Vector2I cell)
@@ -100,8 +130,10 @@ public partial class ExcavationSystem : Node
 		if (cell == _character.CurrentTile())
 		{
 			_character.RequestScanHere();
+			_haveLastMoveTap = false;
 			return;
 		}
 		_character.MoveTo(cell);
+		_haveLastMoveTap = false;
 	}
 }
