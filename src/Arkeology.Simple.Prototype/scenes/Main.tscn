@@ -1,0 +1,224 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/grid/Grid.cs" id="1_grid"]
+[ext_resource type="Script" path="res://scripts/hints/HintsSystem.cs" id="2_hints"]
+[ext_resource type="Script" path="res://scripts/radar/RadarSystem.cs" id="3_radar"]
+[ext_resource type="Script" path="res://scripts/player/PlayerCharacter.cs" id="4_player"]
+[ext_resource type="Script" path="res://scripts/player/CameraController.cs" id="5_camera"]
+[ext_resource type="Script" path="res://scripts/excavation/ExcavationSystem.cs" id="6_excav"]
+[ext_resource type="Script" path="res://scripts/stamina/StaminaSystem.cs" id="7_stamina"]
+[ext_resource type="Script" path="res://scripts/screens/ScreenManager.cs" id="8_screens"]
+[ext_resource type="Script" path="res://scripts/ui/StaminaBar.cs" id="9_staminabar"]
+[ext_resource type="Script" path="res://scripts/ui/CollectionStrip.cs" id="10_collection"]
+[ext_resource type="Script" path="res://scripts/ui/TabBar.cs" id="11_tabbar"]
+[ext_resource type="Script" path="res://scripts/ui/RelaxationScreen.cs" id="12_relax"]
+
+[node name="Main" type="Node2D"]
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="Grid" type="Node2D" parent="World"]
+script = ExtResource("1_grid")
+Width = 20
+Height = 40
+TileSize = 30
+MaxCollapse = 0
+MinFragments = 4
+MaxFragments = 8
+
+[node name="HintsSystem" type="Node2D" parent="World/Grid"]
+script = ExtResource("2_hints")
+
+[node name="RadarSystem" type="Node2D" parent="World/Grid"]
+script = ExtResource("3_radar")
+
+[node name="PlayerCharacter" type="Node2D" parent="World/Grid"]
+script = ExtResource("4_player")
+StaminaPath = NodePath("../../../StaminaSystem")
+
+[node name="Camera" type="Camera2D" parent="."]
+script = ExtResource("5_camera")
+GridPath = NodePath("../World/Grid")
+
+[node name="ExcavationSystem" type="Node" parent="."]
+script = ExtResource("6_excav")
+GridPath = NodePath("../World/Grid")
+PlayerCharacterPath = NodePath("../World/Grid/PlayerCharacter")
+
+[node name="StaminaSystem" type="Node" parent="."]
+script = ExtResource("7_stamina")
+GridPath = NodePath("../World/Grid")
+
+[node name="ScreenManager" type="Node" parent="."]
+script = ExtResource("8_screens")
+GridScreenPath = NodePath("../HUD/ScreenArea/GridScreenOverlay")
+MuseumScreenPath = NodePath("../HUD/ScreenArea/MuseumScreen")
+RelaxationScreenPath = NodePath("../HUD/ScreenArea/RelaxationScreen")
+WorldPath = NodePath("../World")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="StaminaBar" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 720.0
+offset_bottom = 40.0
+mouse_filter = 2
+script = ExtResource("9_staminabar")
+StaminaPath = NodePath("../../StaminaSystem")
+
+[node name="CollectionStrip" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 40.0
+offset_right = 720.0
+offset_bottom = 130.0
+mouse_filter = 2
+script = ExtResource("10_collection")
+GridPath = NodePath("../../World/Grid")
+
+[node name="ScreenArea" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 130.0
+offset_right = 720.0
+offset_bottom = 1170.0
+mouse_filter = 1
+
+[node name="GridScreenOverlay" type="Control" parent="HUD/ScreenArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="MuseumScreen" type="ColorRect" parent="HUD/ScreenArea"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.10, 0.08, 0.07, 1)
+
+[node name="Title" type="Label" parent="HUD/ScreenArea/MuseumScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 80.0
+offset_right = 200.0
+offset_bottom = 130.0
+theme_override_colors/font_color = Color(0.92, 0.84, 0.62, 1)
+theme_override_font_sizes/font_size = 28
+text = "Museum"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="HUD/ScreenArea/MuseumScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 130.0
+offset_right = 200.0
+offset_bottom = 170.0
+theme_override_colors/font_color = Color(0.78, 0.72, 0.58, 1)
+theme_override_font_sizes/font_size = 16
+text = "Coming soon"
+horizontal_alignment = 1
+
+[node name="RelaxationScreen" type="ColorRect" parent="HUD/ScreenArea"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.10, 0.08, 0.07, 1)
+script = ExtResource("12_relax")
+StaminaPath = NodePath("../../../StaminaSystem")
+
+[node name="Title" type="Label" parent="HUD/ScreenArea/RelaxationScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 80.0
+offset_right = 200.0
+offset_bottom = 130.0
+theme_override_colors/font_color = Color(0.92, 0.84, 0.62, 1)
+theme_override_font_sizes/font_size = 28
+text = "Relaxation Room"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="HUD/ScreenArea/RelaxationScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -240.0
+offset_top = 130.0
+offset_right = 240.0
+offset_bottom = 170.0
+theme_override_colors/font_color = Color(0.78, 0.72, 0.58, 1)
+theme_override_font_sizes/font_size = 16
+text = "Watch an ad to refill stamina (simulated)"
+horizontal_alignment = 1
+
+[node name="RefillButton" type="Button" parent="HUD/ScreenArea/RelaxationScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -120.0
+offset_top = 220.0
+offset_right = 120.0
+offset_bottom = 270.0
+theme_override_font_sizes/font_size = 20
+text = "Watch ad (refill)"
+
+[node name="TabBar" type="ColorRect" parent="HUD"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 1170.0
+offset_right = 720.0
+offset_bottom = 1280.0
+color = Color(0.14, 0.11, 0.09, 1)
+script = ExtResource("11_tabbar")
+ScreenManagerPath = NodePath("../../ScreenManager")
+
+[node name="Grid" type="Button" parent="HUD/TabBar"]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 240.0
+offset_bottom = 110.0
+theme_override_font_sizes/font_size = 20
+text = "Grid"
+
+[node name="Museum" type="Button" parent="HUD/TabBar"]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 240.0
+offset_top = 0.0
+offset_right = 480.0
+offset_bottom = 110.0
+theme_override_font_sizes/font_size = 20
+text = "Museum"
+
+[node name="Relaxation" type="Button" parent="HUD/TabBar"]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 480.0
+offset_top = 0.0
+offset_right = 720.0
+offset_bottom = 110.0
+theme_override_font_sizes/font_size = 20
+text = "Relax"

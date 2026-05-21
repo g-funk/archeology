@@ -18,3 +18,7 @@ mono_crash.*.json
 
 # Built exports
 src/Arkeology.Prototype/export/
+src/Arkeology.Simple.Prototype/export/
+
+# macOS Finder metadata
+.DS_Store
