@@ -11,8 +11,8 @@ A sonar-like directional scan that the player triggers explicitly. An expanding 
 
 | Path | Role |
 |---|---|
-| `src/Archeology.Prototype/scripts/radar/RadarSystem.cs` | Listens to `Grid.Dug`, tracks active pulses, draws the rings and wedges |
-| `src/Archeology.Prototype/scenes/Main.tscn` | `RadarSystem` Node2D under `Grid` (composited on top of floors, walls, pings, and hints) |
+| `src/Arkeology.Prototype/scripts/radar/RadarSystem.cs` | Listens to `Grid.Dug`, tracks active pulses, draws the rings and wedges |
+| `src/Arkeology.Prototype/scenes/Main.tscn` | `RadarSystem` Node2D under `Grid` (composited on top of floors, walls, pings, and hints) |
 
 ---
 

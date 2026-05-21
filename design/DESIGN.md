@@ -1,4 +1,4 @@
-# 🏺 Archaeology Game — Design Document
+# 🏺 Arkeology — Design Document
 **Working Title:** *Fragments of the Past*
 
 > **Implementation status:** see [ai-docs/](../ai-docs/) for per-feature documentation of what is currently built.

@@ -1,4 +1,4 @@
-# Archeology
+# Arkeology
 
 Game 
 

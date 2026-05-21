@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Instructions for Claude Code and other coding agents working on the Archeology prototype.
+Instructions for Claude Code and other coding agents working on the Arkeology prototype.
 
 > **Guiding principle:** Discovery → Interpretation → Reinterpretation.
 
@@ -44,19 +44,19 @@ When adding a new feature, create `ai-docs/<feature>.md` and link it from this l
 ## Repo layout
 
 ```
-Archeology/
+Arkeology/
 ├── design/        — DESIGN.md, VISUALS.md, features/*.md
 ├── ai-docs/       — per-feature implementation docs
-└── src/Archeology.Prototype/   — Godot C# project (active work)
+└── src/Arkeology.Prototype/   — Godot C# project (active work)
 ```
 
-The `Archeology.sln` also includes `Archeology.Server` and `Archeology.Client` skeletons — keep them minimal and compiling; don't build gameplay there.
+The `Arkeology.sln` also includes `Arkeology.Server` and `Arkeology.Client` skeletons — keep them minimal and compiling; don't build gameplay there.
 
 ---
 
 ## Implementation rules
 
-1. Default to `Archeology.Prototype`.
+1. Default to `Arkeology.Prototype`.
 2. Build the smallest working version, then iterate.
 3. Prefer simple data over abstractions.
 4. Keep code readable.

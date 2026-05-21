@@ -11,9 +11,9 @@ A simple stick-figure on the grid that walks toward whichever tile the player cl
 
 | Path | Role |
 |---|---|
-| `src/Archeology.Prototype/scripts/player/PlayerCharacter.cs` | `Node2D` figure: initial placement, click-driven target, frame-step movement, custom-drawn body |
-| `src/Archeology.Prototype/scripts/grid/Grid.cs` | New `Clicked(int x, int y)` signal emitted from `HandleClick` for every in-bounds click |
-| `src/Archeology.Prototype/scenes/Main.tscn` | `PlayerCharacter` Node2D under `Grid`, ordered last so it draws on top of overlays |
+| `src/Arkeology.Prototype/scripts/player/PlayerCharacter.cs` | `Node2D` figure: initial placement, click-driven target, frame-step movement, custom-drawn body |
+| `src/Arkeology.Prototype/scripts/grid/Grid.cs` | New `Clicked(int x, int y)` signal emitted from `HandleClick` for every in-bounds click |
+| `src/Arkeology.Prototype/scenes/Main.tscn` | `PlayerCharacter` Node2D under `Grid`, ordered last so it draws on top of overlays |
 
 ---
 

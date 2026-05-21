@@ -12,10 +12,10 @@ Fragments are multi-tile shapes hidden beneath the dig grid. The player digs to 
 
 | Path | Role |
 |---|---|
-| `src/Archeology.Prototype/scripts/artifacts/Fragment.cs` | `Fragment` class, `FragmentShape` enum, `Template(...)` lookup |
-| `src/Archeology.Prototype/scripts/grid/Grid.cs` | Fragment overlay (`_fragmentAt`, `_fragments`, `_collectedFragments`), spawn, collect, hint logic, fragment colors |
-| `src/Archeology.Prototype/scripts/ui/CollectionPanel.cs` | Side panel UI: header + vertical slot list |
-| `src/Archeology.Prototype/scenes/Main.tscn` | `CollectionPanel` node under the HUD |
+| `src/Arkeology.Prototype/scripts/artifacts/Fragment.cs` | `Fragment` class, `FragmentShape` enum, `Template(...)` lookup |
+| `src/Arkeology.Prototype/scripts/grid/Grid.cs` | Fragment overlay (`_fragmentAt`, `_fragments`, `_collectedFragments`), spawn, collect, hint logic, fragment colors |
+| `src/Arkeology.Prototype/scripts/ui/CollectionPanel.cs` | Side panel UI: header + vertical slot list |
+| `src/Arkeology.Prototype/scenes/Main.tscn` | `CollectionPanel` node under the HUD |
 
 ---
 
