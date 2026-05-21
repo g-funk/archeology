@@ -17,4 +17,4 @@ data_*/
 mono_crash.*.json
 
 # Built exports
-src/Archeology.Prototype/export/
+src/Arkeology.Prototype/export/
