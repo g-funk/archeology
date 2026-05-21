@@ -36,6 +36,7 @@ One doc per implemented feature describing current code: file paths, data model,
 - [ai-docs/random_collapse.md](ai-docs/random_collapse.md) — 0..N neighbor collapses per dig
 - [ai-docs/radar.md](ai-docs/radar.md) — expanding sonar ring on dig, directional wedge per detected fragment
 - [ai-docs/character.md](ai-docs/character.md) — archaeologist figure that walks to the clicked tile
+- [ai-docs/stamina.md](ai-docs/stamina.md) — stamina drain, passive recharge, slowdown, HUD bar
 
 When adding a new feature, create `ai-docs/<feature>.md` and link it from this list and from any sibling docs that share code.
 
