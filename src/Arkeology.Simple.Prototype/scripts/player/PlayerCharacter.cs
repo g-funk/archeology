@@ -164,7 +164,8 @@ public partial class PlayerCharacter : Node2D
 		if (digging)
 		{
 			_digElapsedMs += (float)(delta * 1000.0);
-			if (_digElapsedMs >= DigAnimationMs) _digElapsedMs = -1f;
+			if (_digElapsedMs >= DigAnimationMs)
+				_digElapsedMs = IsAutoDigging ? Mathf.PosMod(_digElapsedMs, DigAnimationMs) : -1f;
 		}
 
 		// Pending move-and-dig fires its autodig once the character arrives.
