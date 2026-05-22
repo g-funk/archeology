@@ -13,9 +13,9 @@ After each successful dig, a brief flash appears on the floor above the nearest 
 
 | Path | Role |
 |---|---|
-| `src/Arkeology.Prototype/scripts/ping/PingSystem.cs` | Listens to `Grid.Dug`, manages active ping overlays, custom-draws the flashes |
-| `src/Arkeology.Prototype/scripts/grid/Grid.cs` | Adds the `Dug(int x, int y, int depth)` signal and exposes `Fragments` for nearest-search |
-| `src/Arkeology.Prototype/scenes/Main.tscn` | `PingSystem` Node2D under `Grid` (so its draw is composited on top of floors and walls) |
+| `src/Arkeology.Production.Client/scripts/ping/PingSystem.cs` | Listens to `Grid.Dug`, manages active ping overlays, custom-draws the flashes |
+| `src/Arkeology.Production.Client/scripts/grid/Grid.cs` | Adds the `Dug(int x, int y, int depth)` signal and exposes `Fragments` for nearest-search |
+| `src/Arkeology.Production.Client/scenes/Main.tscn` | `PingSystem` Node2D under `Grid` (so its draw is composited on top of floors and walls) |
 
 ---
 

@@ -11,9 +11,9 @@ Subtle, transient cues that surface invalid actions. Currently one rule: when th
 
 | Path | Role |
 |---|---|
-| `src/Arkeology.Prototype/scripts/hints/HintsSystem.cs` | Listens to `Grid.DigBlocked`, manages active red flashes, custom-draws them |
-| `src/Arkeology.Prototype/scripts/grid/Grid.cs` | Emits `DigBlocked(int x, int y)` from `Dig` when `CanDigDeeper` returns false |
-| `src/Arkeology.Prototype/scenes/Main.tscn` | `HintsSystem` Node2D under `Grid` (composited on top of floors, walls, and pings) |
+| `src/Arkeology.Production.Client/scripts/hints/HintsSystem.cs` | Listens to `Grid.DigBlocked`, manages active red flashes, custom-draws them |
+| `src/Arkeology.Production.Client/scripts/grid/Grid.cs` | Emits `DigBlocked(int x, int y)` from `Dig` when `CanDigDeeper` returns false |
+| `src/Arkeology.Production.Client/scenes/Main.tscn` | `HintsSystem` Node2D under `Grid` (composited on top of floors, walls, and pings) |
 
 ---
 

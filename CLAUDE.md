@@ -1,14 +1,14 @@
 # CLAUDE.md
 
-Instructions for Claude Code and other coding agents working on the Arkeology Simple Prototype.
+Instructions for Claude Code and other coding agents working on the Arkeology production client.
 
 > **Guiding principle:** Discovery → Interpretation → Reinterpretation.
 
 ---
 
-## Active project: Arkeology Simple Prototype
+## Active project: Arkeology.Production.Client
 
-All work goes into `src/Arkeology.Simple.Prototype/`. Do not make gameplay changes to `src/Arkeology.Prototype/`.
+All work goes into `src/Arkeology.Production.Client/`. The Simple Prototype (`src/Arkeology.Simple.Prototype/`) is the validated baseline—keep it compilable as reference. Do not make gameplay changes to `src/Arkeology.Prototype/`.
 
 The design source of truth is [`design/DESIGN-SIMPLE.md`](design/DESIGN-SIMPLE.md). If anything in other documents conflicts with it, `DESIGN-SIMPLE.md` wins.
 
@@ -53,9 +53,10 @@ When adding a new feature, create `ai-docs/<feature>.md` and link it from this l
 
 ```
 Arkeology/
-├── design/                          — DESIGN-SIMPLE.md, DESIGN.md, VISUALS.md, features/*.md
-├── ai-docs/                         — per-feature implementation docs
-└── src/Arkeology.Simple.Prototype/  — Godot C# project (active work)
+├── design/                            — DESIGN-SIMPLE.md, DESIGN.md, VISUALS.md, features/*.md
+├── ai-docs/                           — per-feature implementation docs
+├── src/Arkeology.Production.Client/   — Godot C# project (active work)
+└── src/Arkeology.Simple.Prototype/    — Validated prototype baseline (reference)
 ```
 
 The `Arkeology.sln` also includes `Arkeology.Server`, `Arkeology.Client`, and `Arkeology.Prototype` — keep them minimal and compiling; don't build gameplay there.
@@ -64,7 +65,7 @@ The `Arkeology.sln` also includes `Arkeology.Server`, `Arkeology.Client`, and `A
 
 ## Implementation rules
 
-1. Default to `src/Arkeology.Simple.Prototype/`.
+1. Default to `src/Arkeology.Production.Client/`.
 2. Build the smallest working version, then iterate.
 3. Prefer simple data over abstractions.
 4. Keep code readable.

@@ -13,11 +13,11 @@ The dig mechanic — the player clicks tiles in a 2D grid; each click drains the
 
 | Path | Role |
 |---|---|
-| `src/Arkeology.Prototype/scripts/grid/TileType.cs` | `TileType` enum: `Empty`, `Soil`, `Stone` |
-| `src/Arkeology.Prototype/scripts/grid/Grid.cs` | Layered terrain, dig logic, drawing (floors + walls) |
-| `src/Arkeology.Prototype/scripts/excavation/ExcavationSystem.cs` | Mouse input → forwards to `Grid.HandleClick` |
-| `src/Arkeology.Prototype/scripts/player/CameraController.cs` | `Camera2D` that auto-fits the grid into the visible region |
-| `src/Arkeology.Prototype/scenes/Main.tscn` | Grid (Node2D) + ExcavationSystem (Node) + Camera (Camera2D) |
+| `src/Arkeology.Production.Client/scripts/grid/TileType.cs` | `TileType` enum: `Empty`, `Soil`, `Stone` |
+| `src/Arkeology.Production.Client/scripts/grid/Grid.cs` | Layered terrain, dig logic, drawing (floors + walls) |
+| `src/Arkeology.Production.Client/scripts/excavation/ExcavationSystem.cs` | Mouse input → forwards to `Grid.HandleClick` |
+| `src/Arkeology.Production.Client/scripts/player/CameraController.cs` | `Camera2D` that auto-fits the grid into the visible region |
+| `src/Arkeology.Production.Client/scenes/Main.tscn` | Grid (Node2D) + ExcavationSystem (Node) + Camera (Camera2D) |
 
 ---
 

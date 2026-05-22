@@ -11,7 +11,7 @@ After every successful dig, 0..N neighboring tiles can have their current layer 
 
 | Path | Role |
 |---|---|
-| `src/Arkeology.Prototype/scripts/grid/Grid.cs` | `TryRandomCollapse` (called from `Dig`) and the public `TryCollapse(cell)` |
+| `src/Arkeology.Production.Client/scripts/grid/Grid.cs` | `TryRandomCollapse` (called from `Dig`) and the public `TryCollapse(cell)` |
 
 No new node or script; the feature is entirely inside `Grid` because it shares state with the dig pipeline.
 
