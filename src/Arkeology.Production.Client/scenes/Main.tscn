@@ -10,9 +10,23 @@
 [ext_resource type="Script" uid="uid://rcrhcfnbax74" path="res://scripts/screens/ScreenManager.cs" id="8_screens"]
 [ext_resource type="Script" uid="uid://gth2r6h3td1t" path="res://scripts/ui/StaminaBar.cs" id="9_staminabar"]
 [ext_resource type="Script" uid="uid://dgm0t4jpbmens" path="res://scripts/ui/CollectionStrip.cs" id="10_collection"]
+[ext_resource type="Script" uid="uid://c03eb8eaxp8mw" path="res://scripts/ui/TabButton.cs" id="12_bjd11"]
 [ext_resource type="Script" uid="uid://cux34ptrge6ob" path="res://scripts/ui/RelaxationScreen.cs" id="12_relax"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_wp0k4"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qmy6f"]
+content_margin_top = 20.0
+content_margin_bottom = 20.0
+bg_color = Color(0.15487596, 0.154876, 0.15487587, 1)
+border_color = Color(0.12225222, 0.12225226, 0.122252144, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mwfav"]
+content_margin_top = 20.0
+content_margin_bottom = 20.0
+bg_color = Color(0.32544088, 0.3254409, 0.32544076, 1)
+
+[sub_resource type="SystemFont" id="SystemFont_wp0k4"]
 
 [node name="Main" type="Node2D" unique_id=969644836]
 
@@ -75,8 +89,11 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_font_sizes/font_size = 27
 theme_override_styles/panel = SubResource("StyleBoxEmpty_wp0k4")
+theme_override_styles/tab_unselected = SubResource("StyleBoxFlat_qmy6f")
+theme_override_styles/tab_selected = SubResource("StyleBoxFlat_mwfav")
 current_tab = 0
 tabs_position = 1
+tabs_visible = false
 all_tabs_in_front = true
 switch_on_drag_hover = false
 
@@ -192,3 +209,39 @@ offset_bottom = 270.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 20
 text = "Watch ad (refill)"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HUD/ParentScreen" unique_id=1955253426]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+
+[node name="Button" type="Button" parent="HUD/ParentScreen/HBoxContainer" unique_id=1358308695 node_paths=PackedStringArray("TabContainer")]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = SubResource("SystemFont_wp0k4")
+theme_override_font_sizes/font_size = 40
+text = "Grid"
+script = ExtResource("12_bjd11")
+TabContainer = NodePath("../../TabContainer")
+
+[node name="Button2" type="Button" parent="HUD/ParentScreen/HBoxContainer" unique_id=217296366 node_paths=PackedStringArray("TabContainer")]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = SubResource("SystemFont_wp0k4")
+theme_override_font_sizes/font_size = 40
+text = "Museum"
+script = ExtResource("12_bjd11")
+TabIndex = 1
+TabContainer = NodePath("../../TabContainer")
+
+[node name="Button3" type="Button" parent="HUD/ParentScreen/HBoxContainer" unique_id=1358628322 node_paths=PackedStringArray("TabContainer")]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = SubResource("SystemFont_wp0k4")
+theme_override_font_sizes/font_size = 40
+text = "Relax"
+script = ExtResource("12_bjd11")
+TabIndex = 2
+TabContainer = NodePath("../../TabContainer")
