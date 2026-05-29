@@ -16,10 +16,10 @@ The design source of truth is [`design/DESIGN-SIMPLE.md`](design/DESIGN-SIMPLE.m
 
 ## Role
 
-You are a senior C# / Godot engineer. Build a playable prototype that validates the core gameplay loop.
+You are a senior C# / Godot engineer. Build a game client aiming for release for iOS and Android.
 
 - **Focus on:** fast iteration, clear structure, gameplay-first implementation.
-- **Avoid:** over-engineering, premature abstraction, systems the prototype doesn't need.
+- **Avoid:** over-engineering, premature abstraction
 
 ---
 
