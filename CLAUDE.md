@@ -44,6 +44,7 @@ One doc per implemented feature describing current code: file paths, data model,
 - [ai-docs/radar.md](ai-docs/radar.md) — expanding sonar ring on dig, directional wedge per detected fragment
 - [ai-docs/character.md](ai-docs/character.md) — archaeologist figure, tap/double-tap movement, autodig
 - [ai-docs/stamina.md](ai-docs/stamina.md) — stamina drain, passive recharge, slowdown, HUD bar
+- [ai-docs/collections.md](ai-docs/collections.md) — Collection/Shelf/Item data model, CollectionManager, discovery events
 
 When adding a new feature, create `ai-docs/<feature>.md` and link it from this list and from any sibling docs that share code.
 
