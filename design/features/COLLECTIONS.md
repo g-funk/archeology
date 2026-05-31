@@ -43,7 +43,16 @@ The model should emit the following events/signals to the rest of the game:
 
 See CONFIG.md for general specifications
 
-Collections are stored in order:
+First, the Item information is stored:
+
+1. Id: ushort (1000+ for simple items, 10000+ for partial items)
+2. Name: ushort (string list pointer)
+3. Description: ushort (string list pointer)
+4. Rarity: byte
+5. if partial (id=10000+), part count
+6. Part ids: count * ushort
+
+Then, collections are stored in order:
 
 1. Id: int
 2. Name: string
@@ -54,5 +63,9 @@ Collections are stored in order:
 SHELVES belonging to that COLLECTION are then placed one by one:
 
 1. Item count: byte
-2...N Item: int
+2...N Item: int 
+
+### Future considerations
+
+As the descriptions may contain repeated words, it might make sense to store those as lists of ushorts. So we would have string lists, then lists of string pointers, and ultimately pointers to either directly to string lists, or to lists of string pointers
 

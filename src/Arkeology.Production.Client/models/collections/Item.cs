@@ -15,8 +15,9 @@ public class Item
 
     public bool IsPartial => Parts is { Count: > 0 };
     public bool IsDiscovered => IsPartial ? Parts!.All(p => p.IsDiscovered) : _discovered;
-
     private bool _discovered;
+    
+    
 
     public Item(int id, string name, string description, Rarity rarity, IReadOnlyList<Item>? parts = null)
     {

@@ -13,6 +13,9 @@ public class Collection
     public int Difficulty { get; }
     public IReadOnlyList<Shelf> Shelves { get; }
 
+    //todo: this allocates unnecessarily
+    public bool IsLocked => !Shelves.Any(s => s.Items.Any(i => i.IsDiscovered));
+
     public IEnumerable<Item> AllItems => Shelves.SelectMany(s => s.Items);
 
     public Collection(int id, string name, CollectionState state, int difficulty, IReadOnlyList<Shelf> shelves)
