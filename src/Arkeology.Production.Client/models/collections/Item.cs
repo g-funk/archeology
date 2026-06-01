@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Arkeology.Production.Client;
 
-public enum Rarity { Common, Uncommon, Rare }
+public enum Rarity { Common, Uncommon, Rare, Epic, Legendary }
 
 public class Item
 {

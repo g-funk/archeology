@@ -16,7 +16,13 @@ The config file starts with a header:
 
 1. version major: byte
 2. version minor: byte
-3. build time epoch: long
-4. string table
-5. maps: see MAPS.md
-6. collections: see COLLECTIONS.md
+3. config build time epoch: long
+4. token table
+5. token list table
+
+## Data
+
+The follows after the Header. The data is specific to the config in questions. There will be different config files for at least the following:
+
+* Items - see ITEMS.md
+* Maps - see MAPS.md

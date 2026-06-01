@@ -55,14 +55,30 @@ Scrap items have the color of common items
 
 # Config
 
-Items are defined in their own config file (see also CONFIG.md), the header following the config file format. For each item stored the following information is stored:
+Items are defined in their own config file, the general format defined in CONFIG.md. In the Data section, for each item the following information is stored:
 
 Id: ushort
 Rarity: byte
 Parts count: byte
 Parts ids: 0..N ushort
-Name: ushort (token or list pointer)
+Name: ushort (token/token list pointer)
 Description: ushort (token list pointer)
+Shape data width: byte
+Shape data height: byte
+Shape data: bitmap
+
+## Shape data bitmap
+
+Any shape of an item can be reduced to a two-dimensional array with each slot either occupied or not. This can further be reduced to a one dimensional boolean array, and from that a bitmap of sufficient length can be created.
+
+For example shape (. = empty, x = occupied):
+
+..X.
+.XX.
+XX..
+
+-> 16-slot array: f,f,t,f,f,t,t,f,t,t,f,f
+-> 2-byte bitmap: 001001101100
 
 
 # TODO and future considerations
