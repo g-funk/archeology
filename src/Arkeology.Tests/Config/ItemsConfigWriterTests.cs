@@ -102,6 +102,41 @@ public class ItemsConfigWriterTests
         Assert.Equal(1001, composite.Parts[1]);
     }
 
+    // --- string tokenization round-trip ---
+
+    // Helpers that encode/decode a single description string end-to-end.
+    private static string RoundTripString(string s)
+    {
+        var writer = new ItemsConfigWriter();
+        writer.Add(new ItemConfig(1, "X", s, Rarity.Common));
+        return RoundTrip(writer)[0].Description;
+    }
+
+    [Fact]
+    public void Tokenize_ComplexString_RoundTrips()
+    {
+        // Adapted from the design example; spaces before no-space tokens (,  :) are
+        // normalized away on encode — "back , similar : yes" becomes "back, similar: yes".
+        const string s = "This, a test string: This.should return back, similar: yes (test + test2) \" -- hello";
+        Assert.Equal(s, RoundTripString(s));
+    }
+
+    [Fact]
+    public void Tokenize_EmbeddedDot_StaysAsOneToken()
+    {
+        // "This.should" has a dot between letters — kept as a single user token, not split.
+        const string s = "This.should round-trip intact";
+        Assert.Equal(s, RoundTripString(s));
+    }
+
+    [Fact]
+    public void Tokenize_PredefinedArticle_RoundTrips()
+    {
+        // "The" and "a" hit the predefined normal token table rather than becoming user tokens.
+        const string s = "The ancient artifact, a relic.";
+        Assert.Equal(s, RoundTripString(s));
+    }
+
     // --- string deduplication ---
 
     [Fact]
