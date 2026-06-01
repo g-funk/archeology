@@ -38,5 +38,12 @@ If a collection is in expanded state, on each SHELF, for each ITEM:
 
 * If the ITEM is discovered, shows the ITEM graphics
 * If it's not discovered, PLACEHOLDER graphics is shown
-* If it's partially discovered... maybe for now we show PARTIAL_PLACHOLDER graphics.
+* If it's a partial item partially discovered, show the parts similarly to normal items: placeholders for undiscovered and item graphics for discovered
+* If it's a partial item fully discovered, show the full item graphics and not parts
+
+
+# TODO
+
+* We need some distinction between normal and partial items
+* We need distinction betweeen different rarity items
 
