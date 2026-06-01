@@ -17,19 +17,7 @@ A SHELF is a group of 1-N items in a COLLECTION. It has no other purpose.
 
 ## Item
 
-An ITEM belongs to a SHELF and through that to a COLLECTION.
-An ITEM has
-
-* Id
-* Name
-* Description
-* Rarity
-* Discovered: Simple items are either discovered or not. Partial items are discovered only if all parts have been discovered.
-* Parts: Can be missing. Used to denote the needed ITEMs if this ITEM is partial
-
-### Partial Items
-
-Partial Items consist of multiple parts. These Items can only be discovered when all parts have been found. A part is just another ITEM.
+An ITEM belongs to a SHELF and through that to a COLLECTION. See [ITEMS.md](ITEMS.md) for the full ITEM data model, field definitions, rarities, and partial item details.
 
 ## Events/Signals
 
@@ -41,18 +29,9 @@ The model should emit the following events/signals to the rest of the game:
 
 ## Config
 
-See CONFIG.md for general specifications
+See CONFIG.md for general specifications. Item config format is defined in [ITEMS.md](ITEMS.md).
 
-First, the Item information is stored:
-
-1. Id: ushort (1000+ for simple items, 10000+ for partial items)
-2. Name: ushort (string list pointer)
-3. Description: ushort (string list pointer)
-4. Rarity: byte
-5. if partial (id=10000+), part count
-6. Part ids: count * ushort
-
-Then, collections are stored in order:
+Collections are stored in order:
 
 1. Id: int
 2. Name: string

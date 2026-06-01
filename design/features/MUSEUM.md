@@ -1,6 +1,6 @@
 # Museum
 
-See also COLLECTIONS.md for the model information.
+See also COLLECTIONS.md for the collection/shelf model and ITEMS.md for item types, rarities, and partial item details.
 
 ## Purpose
 
@@ -42,8 +42,5 @@ If a collection is in expanded state, on each SHELF, for each ITEM:
 * If it's a partial item fully discovered, show the full item graphics and not parts
 
 
-# TODO
 
-* We need some distinction between normal and partial items
-* We need distinction betweeen different rarity items
 
