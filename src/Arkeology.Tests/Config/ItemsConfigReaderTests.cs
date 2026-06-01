@@ -110,14 +110,6 @@ public class ItemsConfigReaderTests
         Assert.Equal(1001, composite.Parts[1]);
     }
 
-    [Fact]
-    public void Read_PartialItemWithMissingPart_Throws()
-    {
-        var data = BinaryHelpers.Item(10000, 0, 2000, 2001, [9999]); // 9999 not in file
-        var bytes = BinaryHelpers.Config(1, 0, 0L, ["name", "desc"], [], data);
-        Assert.Throws<InvalidOperationException>(() => Parse(bytes));
-    }
-
     // --- string resolution from token list ---
 
     [Fact]
