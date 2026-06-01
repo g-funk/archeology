@@ -8,6 +8,7 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Folder Include="config\" />
     <Folder Include="models\" />
     <Folder Include="scenes\" />
   </ItemGroup>

@@ -2,6 +2,8 @@
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arkeology.Production.Client", "Arkeology.Production.Client.csproj", "{823C7B49-9913-4840-A200-49EE0D26477A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arkeology.Tests", "..\Arkeology.Tests\Arkeology.Tests.csproj", "{5F3A2B8C-7D1E-4C6F-A9B2-3E8D5C4F7A1B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 	Debug|Any CPU = Debug|Any CPU
@@ -15,5 +17,9 @@ Global
 		{823C7B49-9913-4840-A200-49EE0D26477A}.ExportDebug|Any CPU.Build.0 = ExportDebug|Any CPU
 		{823C7B49-9913-4840-A200-49EE0D26477A}.ExportRelease|Any CPU.ActiveCfg = ExportRelease|Any CPU
 		{823C7B49-9913-4840-A200-49EE0D26477A}.ExportRelease|Any CPU.Build.0 = ExportRelease|Any CPU
+		{5F3A2B8C-7D1E-4C6F-A9B2-3E8D5C4F7A1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F3A2B8C-7D1E-4C6F-A9B2-3E8D5C4F7A1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F3A2B8C-7D1E-4C6F-A9B2-3E8D5C4F7A1B}.ExportDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F3A2B8C-7D1E-4C6F-A9B2-3E8D5C4F7A1B}.ExportRelease|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 EndGlobal

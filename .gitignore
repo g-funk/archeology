@@ -24,5 +24,11 @@ src/Arkeology.Production.Client/export/
 # macOS Finder metadata
 **/.DS_Store
 
-#Rider
+# IDEs
 .idea
+.vscode
+
+# C# / .NET build output
+bin/
+obj/
+*.csproj.user
