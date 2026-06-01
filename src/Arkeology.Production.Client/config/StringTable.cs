@@ -67,4 +67,8 @@ public class StringTable {
     public static bool TryGetPredefinedId(string s, out ushort id) {
         return PredefinedIds.TryGetValue(s, out id);
     }
+    
+    #if DEBUG
+    public String[] UserTokens => _userTokens;
+    #endif
 }
