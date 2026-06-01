@@ -1,19 +1,20 @@
-When given archaeology item source data, convert it into CSV with columns:
-id, rarity, name, description, shape w, shape h, shape data, parts.
+Convert archaeology item source data to CSV using the script at `.claude/skills/items-to-csv/convert.py`.
 
-Rules:
-- r becomes rarity.
-- Shape is consecutive 0/1 rows after description.
-- p becomes parts.
-- Each item has either shape (w,h,data) or parts.
-- Preserve IDs as numbers.
-- Quote CSV fields when needed.
-- If rarity is missing, default to common
-- Shape w is the width of the data in two dimensional array
-- Shape h is the height of the data in two dimensional array
-- Shape data is one-dimensional array
-- Parts should be stored comma-separated, e.g. 1011,1012,1013.
+When given a file path as the argument, run:
+```
+python3 .claude/skills/items-to-csv/convert.py <input_file> [output_file]
+```
 
+If no output file is given the CSV is printed to stdout. Show the output to the user and confirm where it was saved if an output path was provided.
+
+# CSV columns
+id, rarity, name, description, shape w, shape h, shape data, parts
+
+# Conversion rules (for reference / script maintenance)
+- r becomes rarity; defaults to common if missing.
+- Shape rows are consecutive 0/1 lines after description; flattened to a 1D string.
+- p becomes parts (comma-separated part IDs).
+- Each item has either shape (w, h, data) or parts — not both.
 
 # Example
 
@@ -25,4 +26,4 @@ description=Tile used for decorating walls and floors
 11111
 11110
 
--> 1000,common,Tile,"Tile used for decoration walls and floors",5,3,011111111111110,,
+-> 1000,common,Tile,Tile used for decorating walls and floors,5,3,011111111111110,
