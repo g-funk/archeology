@@ -96,7 +96,7 @@ public class ItemsConfigReaderTests
     }
 
     [Fact]
-    public void Read_PartialItem_WiresPartsByReference()
+    public void Read_PartialItem_StoresPartIds()
     {
         var data = BinaryHelpers.Concat(
             BinaryHelpers.Item(1000, 0, 2000, 2001),
@@ -106,8 +106,8 @@ public class ItemsConfigReaderTests
         var items = Parse(bytes);
         var composite = items[2];
         Assert.Equal(2, composite.Parts!.Count);
-        Assert.Equal(1000, composite.Parts[0].Id);
-        Assert.Equal(1001, composite.Parts[1].Id);
+        Assert.Equal(1000, composite.Parts[0]);
+        Assert.Equal(1001, composite.Parts[1]);
     }
 
     [Fact]

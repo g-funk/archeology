@@ -19,7 +19,7 @@ Collection (Id, Name, State, Difficulty)
               └── Config: ItemConfig (Id, Name, Description, Rarity, Parts?)
 ```
 
-**ItemConfig**: immutable, deserialized from binary config. Holds all static properties: `Id`, `Name`, `Description`, `Rarity`, `Parts` (`IReadOnlyList<ItemConfig>?`), and `IsPartial`. `Rarity` enum lives here.
+**ItemConfig**: immutable, deserialized from binary config. Holds all static properties: `Id`, `Name`, `Description`, `Rarity`, `Parts` (`IReadOnlyList<int>?` — part IDs only), and `IsPartial`. `Rarity` enum lives here.
 
 **Item**: runtime instance wrapping an `ItemConfig`. Holds only mutable state: `_discovered` flag, `Parts` (`IReadOnlyList<Item>?` — runtime instances for discovery tracking), and `IsDiscovered`/`MarkDiscovered`. `IsPartial` delegates to `Config.IsPartial`. `MarkDiscovered()` only needs to be called on simple items and parts.
 

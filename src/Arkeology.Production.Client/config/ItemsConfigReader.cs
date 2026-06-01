@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Arkeology.Production.Client;
 
@@ -23,26 +24,24 @@ public class ItemsConfigReader : ConfigReader<IReadOnlyList<ItemConfig>>
             raws.Add((id, rarity, name, desc, partIds));
         }
 
-        var byId = new Dictionary<int, ItemConfig>(raws.Count);
-        foreach (var (id, rarity, name, desc, _) in raws)
-            byId[id] = new ItemConfig(id, name, desc, rarity);
+        var allIds = new HashSet<int>(raws.Select(r => r.id));
 
         var result = new List<ItemConfig>(raws.Count);
         foreach (var (id, rarity, name, desc, partIds) in raws)
         {
             if (partIds.Length == 0)
             {
-                result.Add(byId[id]);
+                result.Add(new ItemConfig(id, name, desc, rarity));
                 continue;
             }
 
-            var parts = new ItemConfig[partIds.Length];
+            var parts = new int[partIds.Length];
             for (var i = 0; i < partIds.Length; i++)
             {
-                if (!byId.TryGetValue(partIds[i], out var part))
+                if (!allIds.Contains(partIds[i]))
                     throw new InvalidOperationException(
                         $"Item {id} references unknown part ID {partIds[i]}.");
-                parts[i] = part;
+                parts[i] = partIds[i];
             }
             result.Add(new ItemConfig(id, name, desc, rarity, parts));
         }
