@@ -8,7 +8,7 @@ namespace Arkeology.Tests.Config;
 
 public class ItemsConfigReaderTests
 {
-    private static IReadOnlyList<Item> Parse(byte[] bytes)
+    private static IReadOnlyList<ItemConfig> Parse(byte[] bytes)
         => new ItemsConfigReader().Read(new MemoryStream(bytes));
 
     // token index 0 → ID 2000 (name), index 1 → ID 2001 (desc)

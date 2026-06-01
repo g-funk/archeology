@@ -22,15 +22,15 @@ public class CollectionManager
         _partOf.Clear();
 
         foreach (var item in _collections.SelectMany(c => c.AllItems))
-            _itemIndex[item.Id] = item;
+            _itemIndex[item.Config.Id] = item;
 
         foreach (var item in _itemIndex.Values.Where(i => i.IsPartial))
         {
             foreach (var part in item.Parts!)
             {
-                if (!_partOf.ContainsKey(part.Id))
-                    _partOf[part.Id] = new List<Item>();
-                _partOf[part.Id].Add(item);
+                if (!_partOf.ContainsKey(part.Config.Id))
+                    _partOf[part.Config.Id] = new List<Item>();
+                _partOf[part.Config.Id].Add(item);
             }
         }
     }
@@ -46,7 +46,7 @@ public class CollectionManager
         if (_partOf.TryGetValue(itemId, out var parents))
         {
             foreach (var parent in parents.Where(p => p.IsDiscovered))
-                ItemDiscovered?.Invoke(parent.Id);
+                ItemDiscovered?.Invoke(parent.Config.Id);
         }
     }
 }

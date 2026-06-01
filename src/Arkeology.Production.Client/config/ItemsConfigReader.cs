@@ -4,9 +4,9 @@ using System.IO;
 
 namespace Arkeology.Production.Client;
 
-public class ItemsConfigReader : ConfigReader<IReadOnlyList<Item>>
+public class ItemsConfigReader : ConfigReader<IReadOnlyList<ItemConfig>>
 {
-    protected override IReadOnlyList<Item> ReadData(BinaryReader reader, ConfigHeader header)
+    protected override IReadOnlyList<ItemConfig> ReadData(BinaryReader reader, ConfigHeader header)
     {
         var raws = new List<(int id, Rarity rarity, string name, string desc, ushort[] partIds)>();
 
@@ -23,13 +23,11 @@ public class ItemsConfigReader : ConfigReader<IReadOnlyList<Item>>
             raws.Add((id, rarity, name, desc, partIds));
         }
 
-        // Create leaf Item instances for all records
-        var byId = new Dictionary<int, Item>(raws.Count);
+        var byId = new Dictionary<int, ItemConfig>(raws.Count);
         foreach (var (id, rarity, name, desc, _) in raws)
-            byId[id] = new Item(id, name, desc, rarity);
+            byId[id] = new ItemConfig(id, name, desc, rarity);
 
-        // Rebuild partial items with parts wired up
-        var result = new List<Item>(raws.Count);
+        var result = new List<ItemConfig>(raws.Count);
         foreach (var (id, rarity, name, desc, partIds) in raws)
         {
             if (partIds.Length == 0)
@@ -38,7 +36,7 @@ public class ItemsConfigReader : ConfigReader<IReadOnlyList<Item>>
                 continue;
             }
 
-            var parts = new Item[partIds.Length];
+            var parts = new ItemConfig[partIds.Length];
             for (var i = 0; i < partIds.Length; i++)
             {
                 if (!byId.TryGetValue(partIds[i], out var part))
@@ -46,7 +44,7 @@ public class ItemsConfigReader : ConfigReader<IReadOnlyList<Item>>
                         $"Item {id} references unknown part ID {partIds[i]}.");
                 parts[i] = part;
             }
-            result.Add(new Item(id, name, desc, rarity, parts));
+            result.Add(new ItemConfig(id, name, desc, rarity, parts));
         }
 
         return result;

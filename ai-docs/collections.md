@@ -4,7 +4,8 @@ Data model for the museum collections system. No Godot dependency — plain C# c
 
 ## Files
 
-- `models/collections/Item.cs` — `Item`, `Rarity` enum
+- `config/ItemConfig.cs` — `ItemConfig`, `Rarity` enum
+- `models/collections/Item.cs` — `Item` (runtime instance)
 - `models/collections/Shelf.cs` — `Shelf`
 - `models/collections/Collection.cs` — `Collection`, `CollectionState` enum
 - `models/collections/CollectionManager.cs` — `CollectionManager`
@@ -14,10 +15,13 @@ Data model for the museum collections system. No Godot dependency — plain C# c
 ```
 Collection (Id, Name, State, Difficulty)
   └── Shelf[]
-        └── Item[] (Id, Name, Description, Rarity, Parts?)
+        └── Item[]
+              └── Config: ItemConfig (Id, Name, Description, Rarity, Parts?)
 ```
 
-**Item**: either simple (leaf) or partial. A partial item has a `Parts` list of other Items; it is considered discovered only when all its parts are discovered. `IsDiscovered` is derived for partial items — `MarkDiscovered()` only needs to be called on simple items and parts.
+**ItemConfig**: immutable, deserialized from binary config. Holds all static properties: `Id`, `Name`, `Description`, `Rarity`, `Parts` (`IReadOnlyList<ItemConfig>?`), and `IsPartial`. `Rarity` enum lives here.
+
+**Item**: runtime instance wrapping an `ItemConfig`. Holds only mutable state: `_discovered` flag, `Parts` (`IReadOnlyList<Item>?` — runtime instances for discovery tracking), and `IsDiscovered`/`MarkDiscovered`. `IsPartial` delegates to `Config.IsPartial`. `MarkDiscovered()` only needs to be called on simple items and parts.
 
 **CollectionState**: `Locked` / `Unlocked` (byte-backed enum matching config format). State is a plain settable property; unlock logic lives in `CollectionManager`.
 
@@ -25,7 +29,7 @@ Collection (Id, Name, State, Difficulty)
 
 Plain C# class. Owns the canonical list of collections and two flat indexes built on `LoadCollections`:
 
-- `_itemIndex`: `int → Item` for O(1) lookup by id
+- `_itemIndex`: `int → Item` for O(1) lookup by id (keyed on `item.Config.Id`)
 - `_partOf`: `partId → List<Item>` reverse index mapping a part to the partial items that contain it
 
 ### DiscoverItem(int itemId)
