@@ -22,16 +22,24 @@ public abstract class ConfigWriter<T>
         w.Write((byte)0);  // versionMinor
         w.Write(0L);       // buildTime
 
-        var tokens = strings.Tokens;
-        w.Write((ushort)tokens.Length);
-        foreach (var token in tokens)
+        var userTokens = strings.UserTokens;
+        w.Write((ushort)userTokens.Length);
+        foreach (var token in userTokens)
         {
             var bytes = Encoding.UTF8.GetBytes(token);
             w.Write((byte)bytes.Length);
             w.Write(bytes);
         }
 
-        w.Write((ushort)0); // no token lists
+        var tokenLists = strings.TokenLists;
+        w.Write((ushort)tokenLists.Length);
+        foreach (var list in tokenLists)
+        {
+            w.Write((byte)list.Length);
+            foreach (var tokenId in list)
+                w.Write(tokenId);
+        }
+
         w.Write(itemData);
 
         return ms.ToArray();
