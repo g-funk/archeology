@@ -1,26 +1,9 @@
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Arkeology.Production.Client;
 
 public class StringTableBuilder
 {
-    // Versioned contract — must stay in sync with StringTable.PredefinedTokens in the decoder.
-    // No-space (0–999): attach to preceding token without a leading space.
-    private static readonly Dictionary<string, ushort> NoSpaceTokens = new()
-    {
-        { ",", 2 }, { ".", 3 }, { "!", 4 }, { "?", 5 }, { ":", 6 }, { ";", 7 }, { ")", 8 }
-    };
-
-    // Normal (1000–1999): rendered with a leading space.
-    private static readonly Dictionary<string, ushort> NormalTokens = new()
-    {
-        { "The", 1000 }, { "the", 1001 }, { "A", 1002 }, { "a", 1003 },
-        { "An", 1004 }, { "an", 1005 }, { "\n", 1006 }
-    };
-
-    private static readonly HashSet<char> NoSpaceChars =
-        new(NoSpaceTokens.Keys.Where(k => k.Length == 1).Select(k => k[0]));
 
     private readonly Dictionary<string, ushort> _userTokenIndex = new();
     private readonly List<string> _userTokens = [];
@@ -47,8 +30,7 @@ public class StringTableBuilder
 
     private void TokenizePart(string word, List<ushort> result)
     {
-        if (NoSpaceTokens.TryGetValue(word, out var id)) { result.Add(id); return; }
-        if (NormalTokens.TryGetValue(word, out id)) { result.Add(id); return; }
+        if (StringTable.TryGetPredefinedId(word, out var id)) { result.Add(id); return; }
 
         // Find earliest split: purely alphanumeric prefix + all-no-space-char suffix.
         // Punctuation embedded within a word (e.g. major.minor, e.g., v1.2) → no split, single user token.
@@ -66,7 +48,10 @@ public class StringTableBuilder
         {
             result.Add(GetOrAddUserToken(word[..splitAt]));
             for (int i = splitAt; i < word.Length; i++)
-                result.Add(NoSpaceTokens[word[i].ToString()]);
+            {
+                StringTable.TryGetPredefinedId(word[i].ToString(), out var punctId);
+                result.Add(punctId);
+            }
         }
         else
         {
@@ -76,8 +61,7 @@ public class StringTableBuilder
 
     private ushort GetOrAddUserToken(string token)
     {
-        if (NoSpaceTokens.TryGetValue(token, out var id)) return id;
-        if (NormalTokens.TryGetValue(token, out id)) return id;
+        if (StringTable.TryGetPredefinedId(token, out var id)) return id;
         if (_userTokenIndex.TryGetValue(token, out id)) return id;
         id = (ushort)(2000 + _userTokens.Count);
         _userTokenIndex[token] = id;
@@ -105,7 +89,10 @@ public class StringTableBuilder
     private static bool IsAllNoSpaceChars(string s, int start)
     {
         for (int i = start; i < s.Length; i++)
-            if (!NoSpaceChars.Contains(s[i])) return false;
+        {
+            if (!StringTable.TryGetPredefinedId(s[i].ToString(), out var id) || id >= 1000)
+                return false;
+        }
         return true;
     }
 }

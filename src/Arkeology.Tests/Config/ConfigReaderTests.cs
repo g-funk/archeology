@@ -71,7 +71,8 @@ public class ConfigReaderTests
     {
         // "sword." — user token "sword" (2000) + predefined "." (3)
         var tokens = new[] { "sword" };
-        var lists = new ushort[][] { [2000, 3] };
+        StringTable.TryGetPredefinedId(".", out var id);
+        var lists = new ushort[][] { [2000, id] };
         var h = Parse(BinaryHelpers.Config(1, 0, 0L, tokens, lists, []));
         Assert.Equal("sword.", h.Strings.Resolve(20000));
     }

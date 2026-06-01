@@ -117,7 +117,8 @@ public class ItemsConfigReaderTests
     {
         // name points to token list 20000: "Ancient" + "." → "Ancient."
         var tokens = new[] { "Ancient", "desc" };
-        var lists = new ushort[][] { [2000, 3] }; // "Ancient."
+        StringTable.TryGetPredefinedId(".", out var id);
+        var lists = new ushort[][] { [2000, id] }; // "Ancient."
         var data = BinaryHelpers.Item(1000, 0, 20000, 2001);
         var bytes = BinaryHelpers.Config(1, 0, 0L, tokens, lists, data);
         var items = Parse(bytes);
