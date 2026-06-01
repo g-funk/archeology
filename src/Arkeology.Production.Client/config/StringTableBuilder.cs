@@ -24,8 +24,14 @@ public class StringTableBuilder
     private ushort[] Tokenize(string str)
     {
         var result = new List<ushort>();
-        foreach (var part in str.Split(' ', System.StringSplitOptions.RemoveEmptyEntries))
+        var parts = str.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        for (int i = 0; i < parts.Length; i++)
+        {
+            var part = parts[i];
+            if (i > 0 && StringTable.TryGetPredefinedId(part, out var wholeId) && wholeId < 1000)
+                result.Add(1); // explicit space before standalone no-space token
             TokenizePart(part, result);
+        }
         return result.ToArray();
     }
 
@@ -50,8 +56,11 @@ public class StringTableBuilder
             result.Add(GetOrAddUserToken(word[..splitAt]));
             for (int i = splitAt; i < word.Length; i++)
             {
-                StringTable.TryGetPredefinedId(word[i].ToString(), out var punctId);
-                result.Add(punctId);
+                var ch = word[i].ToString();
+                if (StringTable.TryGetPredefinedId(ch, out var punctId))
+                    result.Add(punctId);
+                else
+                    result.Add(GetOrAddUserToken(ch));
             }
         }
         else

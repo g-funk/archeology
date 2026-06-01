@@ -9,7 +9,7 @@ public class StringTable {
     private static Dictionary<ushort, string> BuildPredefinedIds() => new()
     {
         // No-space (0–999): punctuation attaches to preceding token without a leading space
-        [2] = ",", [3] = ".", [4] = "!", [5] = "?", [6] = ":", [7] = ";", [8] = ")",
+        [1] = " ", [2] = ",", [3] = ".", [4] = "!", [5] = "?", [6] = ":", [7] = ";", [8] = ")",
         // Normal (1000–1999): rendered with a leading space
         [1000] = "The", [1001] = "the", [1002] = "A", [1003] = "a",
         [1004] = "An", [1005] = "an", [1006] = "\n",

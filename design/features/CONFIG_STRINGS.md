@@ -74,3 +74,37 @@ Decoded step by step:
 - `2004` next → "This, is an example. The next"
 - `2005` part → "This, is an example. The next part"
 - `3`   `.` (no-space) → "This, is an example. The next part."
+
+## Complex Example
+
+Input: "This, a test string: This.should return back ,similar : yes (test + test2) \" -- hello"
+Tokenized (p: means predefined):
+
+This
+p:, (with following space)
+p:a
+test
+string
+p::
+This.should
+return
+back
+p:<space character>
+p:, (without following space)
+similar
+p:<space character>
+p::
+yes
+p:(
+test
+p:+
+test2
+p:)
+p:"
+--
+hello
+
+
+
+
+
