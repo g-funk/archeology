@@ -1,8 +1,8 @@
 id,rarity,name,description,shape w,shape h,shape data,parts
-1000,common,Tile,"Tile used for decorating walls and floors",5,3,011111111111110,
-1001,common,The Drop Statue,"Mystical status that is able to balance on the narrow single foot",5,6,011101101110001111110111000100,
-1002,common,The Plus,"A plus sign. Or maybe a cross?",3,3,010111010,
-1010,uncommon,Animal,"A statue shaped like an animal",,,"1011,1012,1013"
-1011,common,Head?,"This looks like a head",5,2,1110000100,
-1012,common,Unknown,"It is difficult to say what this is. Maybe a part of something bigger?",5,3,001110010000100,
-1013,common,Unknown,"Hmm... can't recognise what this is",4,5,00000000111100100010,
+1000,common,Tile,Tile used for decorating walls and floors,5,3,011111111111110,
+1001,common,The Drop Statue,Mystical status that is able to balance on the narrow single foot,5,6,011101101110001111110111000100,
+1002,common,The Plus,A plus sign. Or maybe a cross?,3,3,010111010,
+1010,uncommon,Animal,A statue shaped like an animal,,,,"1011,1012,1013"
+1011,common,Head?,This looks like a head,5,2,1110000100,
+1012,common,Unknown,It is difficult to say what this is. Maybe a part of something bigger?,5,3,001110010000100,
+1013,common,Unknown,Hmm... can't recognise what this is,4,5,00000000111100100010,

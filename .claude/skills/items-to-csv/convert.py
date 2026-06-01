@@ -64,7 +64,7 @@ def main():
 
     out = open(sys.argv[2], 'w', newline='', encoding='utf-8') if len(sys.argv) > 2 else sys.stdout
     try:
-        writer = csv.writer(out)
+        writer = csv.writer(out, lineterminator='\n')
         writer.writerow(['id', 'rarity', 'name', 'description', 'shape w', 'shape h', 'shape data', 'parts'])
         for item in items:
             writer.writerow([
