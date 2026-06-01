@@ -19,6 +19,7 @@ public class StringTableBuilder
 
     public string[] UserTokens => _userTokens.ToArray();
     public ushort[][] TokenLists => _tokenLists.ToArray();
+    public StringTable Build() => new (UserTokens, TokenLists);
 
     private ushort[] Tokenize(string str)
     {
