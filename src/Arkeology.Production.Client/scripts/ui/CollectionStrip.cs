@@ -47,6 +47,8 @@ public partial class CollectionStrip : Control
 		}
 	}
 
+	private readonly Vector2[] _hexVerts = new Vector2[6];
+
 	private void DrawSlot(Vector2 origin, Vector2 size, Fragment frag)
 	{
 		DrawRect(new Rect2(origin, size), SlotColor, filled: true);
@@ -64,23 +66,22 @@ public partial class CollectionStrip : Control
 		const float slotInset = 3f;
 		float availW = Mathf.Max(1f, size.X - 2 * slotInset);
 		float availH = Mathf.Max(1f, size.Y - 2 * slotInset);
-		float cellByW = (availW - (wCells - 1) * CellSpacing) / wCells;
-		float cellByH = (availH - (hCells - 1) * CellSpacing) / hCells;
-		float cellSize = Mathf.Min(CellSize, Mathf.Min(cellByW, cellByH));
-		if (cellSize < 1f) cellSize = 1f;
-		float spacing = cellSize > 3f ? CellSpacing : 0f;
 
-		float pixW = wCells * cellSize + (wCells - 1) * spacing;
-		float pixH = hCells * cellSize + (hCells - 1) * spacing;
-		var shapeOrigin = origin + new Vector2((size.X - pixW) / 2f, (size.Y - pixH) / 2f);
+		// Fit hex grid into slot: R such that GridPixelSize(wCells, hCells, R) <= avail.
+		float rByW = availW / ((wCells + 0.5f) * 1.7320508f);
+		float rByH = availH / (hCells * 1.5f + 0.5f);
+		float cellR = Mathf.Min(CellSize, Mathf.Min(rByW, rByH));
+		if (cellR < 1f) cellR = 1f;
+
+		var hexPixSize = HexMetrics.GridPixelSize(wCells, hCells, cellR);
+		var shapeOrigin = origin + new Vector2(slotInset, slotInset)
+			+ (new Vector2(availW, availH) - hexPixSize) * 0.5f;
 
 		foreach (var c in template)
 		{
-			var rect = new Rect2(
-				shapeOrigin.X + c.X * (cellSize + spacing),
-				shapeOrigin.Y + c.Y * (cellSize + spacing),
-				cellSize, cellSize);
-			DrawRect(rect, GoldColor, filled: true);
+			var center = HexMetrics.CellCenter(c.X, c.Y, cellR) + shapeOrigin;
+			HexMetrics.HexVerticesAt(center, cellR, _hexVerts);
+			DrawColoredPolygon(_hexVerts, GoldColor);
 		}
 	}
 }

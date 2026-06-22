@@ -27,7 +27,7 @@ A simple stick-figure on the grid that walks toward whichever tile the player cl
   - `RequestScanHere()` — immediately calls `Grid.TriggerScan(...)` for the character's current tile and that tile's depth, no walking. Used for the `S` key.
   - `RequestStep(dx, dy)` — set the target one tile in the given direction from `CurrentTile()`, but **only when the character has arrived at its current target** (`Position == _targetPosition`). Without that guard a single tap registers as two tiles, because `CurrentTile()` flips at the half-way point and the next poll would push the target forward again. The guard alone isn't enough though — see the continuous-step threshold in `ExcavationSystem` below.
   - `RequestCollect()` — calls `Grid.TryCollectFragment` for the character's current tile. No-op if no fragment / not fully exposed (the grid validates). Used by the C-key trigger.
-  - `RequestDigAround()` — fills `_digQueue` with the under-tile first, then the ring **anti-clockwise from east** (E → NE → N → NW → W → SW → S → SE; out-of-bounds dropped). Drains the queue in `_Process` one tile at a time on a `DigAnimationMs` cadence. Re-pressing `D` resets the queue.
+  - `RequestDigAround()` — fills `_digQueue` with the under-tile first, then the **6 hex neighbors** in `HexMetrics.GetNeighbors` order (E, W, NE, NW, SE, SW; out-of-bounds dropped). Drains the queue in `_Process` one tile at a time on a `DigAnimationMs` cadence. Re-pressing `D` resets the queue.
 
 #### Autodig rules
 
@@ -58,7 +58,7 @@ Tapping a different tile while `IsAutoDigging` cancels the current sweep and imm
 | Key | Action |
 |---|---|
 | `S` | Scan at the character's current tile (via `RequestScanHere`). |
-| `D` | Dig the under-tile + 8 neighbors one-by-one (via `RequestDigAround`). |
+| `D` | Dig the under-tile + 6 hex neighbors one-by-one (via `RequestDigAround`). |
 | `C` | Collect a fragment at the character's current tile if it's fully exposed (via `RequestCollect`). |
 | Arrow keys | Step one tile per press. Holding longer than `ContinuousStepHoldMs` (default 250 ms) chains continuous steps; combinations move diagonally. |
 

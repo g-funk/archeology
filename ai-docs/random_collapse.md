@@ -30,7 +30,7 @@ No new node or script; the feature is entirely inside `Grid` because it shares s
 
 ## Behavior
 
-1. Roll the four 4-neighbors of the dug tile in a random order (Fisher–Yates shuffle of the direction list, using the Grid's seeded `_rng`). The shuffle keeps the `MaxCollapse` cap from biasing toward right/down when the limit kicks in.
+1. Roll the six hex neighbors of the dug tile in a random order (Fisher–Yates shuffle, using the Grid's seeded `_rng`). The shuffle keeps the `MaxCollapse` cap from biasing by iteration order when the limit kicks in.
 2. For each direction:
    - If `collapsed == MaxCollapse` → stop.
    - Otherwise, roll `_rng.NextDouble() < CollapseChance`. On a hit, attempt `TryCollapse(neighbor)`.

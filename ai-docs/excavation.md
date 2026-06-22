@@ -1,11 +1,12 @@
 # Excavation
 
-The dig mechanic — the player clicks tiles in a 2D grid; each click drains the current layer's HP, and when the layer clears the tile drops to the next depth. The world is layered; players must terrace down step by step.
+The dig mechanic — the player clicks hexagonal tiles in a layered grid; each click drains the current layer's HP, and when the layer clears the tile drops to the next depth. The world is layered; players must terrace down step by step.
 
 > **Design source:** `design/DESIGN.md` §3 Excavation System
 > **Visual rules:** `design/VISUALS.md` (floor darkening, walls between depth steps)
 > **Process rules:** `CLAUDE.md` "Excavation System"
 > **Layered feature:** [ai-docs/collection.md](collection.md) — fragments are an overlay on top of this grid
+> **Hex math:** `HexMetrics.cs` — pointy-top, odd-r offset coordinates
 
 ---
 
@@ -14,7 +15,8 @@ The dig mechanic — the player clicks tiles in a 2D grid; each click drains the
 | Path | Role |
 |---|---|
 | `src/Arkeology.Production.Client/scripts/grid/TileType.cs` | `TileType` enum: `Empty`, `Soil`, `Stone` |
-| `src/Arkeology.Production.Client/scripts/grid/Grid.cs` | Layered terrain, dig logic, drawing (floors + walls) |
+| `src/Arkeology.Production.Client/scripts/grid/HexMetrics.cs` | Pure math: cell centers, pixel size, WorldToCell, GetNeighbors, wall edge helpers |
+| `src/Arkeology.Production.Client/scripts/grid/Grid.cs` | Layered terrain, dig logic, drawing (hex floors + walls) |
 | `src/Arkeology.Production.Client/scripts/excavation/ExcavationSystem.cs` | Mouse input → forwards to `Grid.HandleClick` |
 | `src/Arkeology.Production.Client/scripts/player/CameraController.cs` | `Camera2D` that auto-fits the grid into the visible region |
 | `src/Arkeology.Production.Client/scenes/Main.tscn` | Grid (Node2D) + ExcavationSystem (Node) + Camera (Camera2D) |
@@ -42,12 +44,12 @@ Material distribution is identical at every depth (~32% stone, ~68% soil), rolle
 
 ## Step constraint ("one deeper than surrounds")
 
-A tile may **advance depth** only when every in-bound 4-neighbor is already at depth ≥ this tile's current depth. Out-of-bounds neighbors don't constrain.
+A tile may **advance depth** only when every in-bound **hex neighbor** (6 neighbors) is already at depth ≥ this tile's current depth. Out-of-bounds neighbors don't constrain.
 
 `Grid.CanDigDeeper(x, y)`:
 
 ```
-return all 4-neighbors n: !InBounds(n) || _depth[n] >= _depth[x, y]
+return all 6-hex-neighbors n: !InBounds(n) || _depth[n] >= _depth[x, y]
 ```
 
 If this check fails, `Dig(cell)` emits `DigBlocked(x, y)` and returns — the player must dig surrounding tiles down first. This forces terraced excavation: a deeper "pit" can only be one step lower than its rim. The blocked signal feeds the hint flash — see [ai-docs/hints.md](hints.md).
@@ -89,12 +91,22 @@ S key (ExcavationSystem)
 
 `Grid._Draw` paints in two passes:
 
-1. **Floors** — one `Rect2` per tile via `FloorColorFor(x, y)`.
-2. **Walls** — per-tile, on the deeper-than-neighbor edges.
+1. **Floors** — one `DrawColoredPolygon` hex per tile via `FloorColorFor(x, y)`.
+2. **Walls** — `DrawHexWalls()` draws a `DrawLine` on each edge where this tile is strictly deeper than its hex neighbor.
+
+### Hex geometry
+
+`HexMetrics` provides all the math. Key facts:
+- **Pointy-top hexagons**, odd-r offset coordinates.
+- `TileSize` = circumradius R (center-to-vertex). Default 22 px (scene can override).
+- Flat-to-flat width `w = R × √3`. Row-to-row pitch = `R × 1.5`. Odd rows shift right by `w/2`.
+- Cell (0,0) center at `(w/2, R)` — top vertex at y=0, leftmost edge at x=0.
+- Grid pixel size: `((Width + 0.5) × w, R × (Height × 1.5 + 0.5))`.
+- `WorldToCell` uses cube-coordinate rounding via fractional axial coords.
 
 ### Floor colors
 
-`FloorColorFor` picks a base color and applies a depth-darkening factor from design/VISUALS.md:
+Same depth-darkening as the square grid:
 
 | `_depth[x, y]` | Multiplier |
 |---|---|
@@ -116,18 +128,13 @@ Fragment-related states (ochre hint, gold exposed, pale gold fully-exposed) are 
 
 ### Walls
 
-`DrawWalls()` per design/VISUALS.md: for each tile, for each of the 4 sides, if this tile is **strictly deeper** than the neighbor on that side, paint a wall on this tile's edge.
+`DrawHexWalls()`: for each hex tile, for each of its 6 edges, if this tile is **strictly deeper** than the neighbor sharing that edge, draw a `DrawLine` along the edge.
 
-The wall sits in the deeper tile's outer pixels, so a raw `floor()` of the world position would assign wall-pixel clicks to that deeper tile. `Grid.WorldToCell` corrects for this: when the floor maps to a tile that has a wall on the side the click lands in, the click is re-routed to the **shallow neighbor** on that side — the tile the player almost certainly intended when targeting "the edge".
+Edge color convention (matching the square grid's top-left shadow / bottom-right highlight):
+- **Shadow** `(0.04, 0.03, 0.02)` — NE, NW, W edges (upper half of hex)
+- **Highlight** `(0.75, 0.75, 0.73)` — E, SE, SW edges (lower half of hex)
 
-| Side | Color | Notes |
-|---|---|---|
-| Top, Left | dark shadow `(0.04, 0.03, 0.02)` | near edge of the pit, in shadow |
-| Right, Bottom | bright highlight `(0.75, 0.75, 0.73)` | far edge of the pit, catching light |
-
-The dark-near / bright-far pairing makes a deeper tile read as a recessed pit.
-
-Wall thickness scales with the depth gap: `unit × (d - nd)`, where `unit = max(2, TileSize / 10)`. A drop of one layer is one unit thick, a drop of two is twice that, etc. No gradient is applied yet — a single flat color per wall.
+Wall line thickness = `unit × (d - nd)` where `unit = max(2, TileSize / 10)`. The line is drawn on the shared edge (not offset inward). Depth gap of 1 → one unit thick; deeper drops scale proportionally.
 
 ---
 

@@ -137,7 +137,7 @@ public partial class RadarSystem : Node2D
 			float t = p.ElapsedMs / FadeMs;
 			float radiusPx = t * ScanRadius * tile;
 			float alpha = Mathf.Max(0f, 1f - t);
-			var center = new Vector2((p.CenterX + 0.5f) * tile, (p.CenterY + 0.5f) * tile);
+			var center = HexMetrics.CellCenter(p.CenterX, p.CenterY, tile);
 
 			// Base ring — subtle, dissipates as it expands.
 			var ringColor = new Color(1f, 1f, 1f, alpha * RingBrightness);

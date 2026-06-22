@@ -45,17 +45,16 @@ public partial class CameraController : Camera2D
 		float availW = right - left;
 		float availH = bottom - top;
 
-		float gridW = _grid.Width * _grid.TileSize;
-		float gridH = _grid.Height * _grid.TileSize;
+		var gridPixels = HexMetrics.GridPixelSize(_grid.Width, _grid.Height, _grid.TileSize);
+		float gridW = gridPixels.X;
+		float gridH = gridPixels.Y;
 		if (gridW <= 0 || gridH <= 0 || availW <= 0 || availH <= 0) return;
 
 		float zoom = Mathf.Min(availW / gridW, availH / gridH);
 		zoom = Mathf.Clamp(zoom, MinZoom, MaxZoom);
 		Zoom = new Vector2(zoom, zoom);
 
-		// Offset the camera so the *available* region (not the full viewport)
-		// is what's centered on the grid.
-		var gridCenter = _grid.Position + new Vector2(gridW / 2f, gridH / 2f);
+		var gridCenter = _grid.Position + gridPixels / 2f;
 		var availableCenter = new Vector2((left + right) / 2f, (top + bottom) / 2f);
 		var viewportCenter = viewport / 2f;
 		Position = gridCenter + (viewportCenter - availableCenter) / zoom;

@@ -43,9 +43,6 @@ public partial class HintsSystem : Node2D
 
 		int d = _grid.GetDepth(x, y);
 
-		// Bedrock or fragment-at-current-depth: no preventing neighbour exists,
-		// so flash the attempted tile itself — that's "we tried this tile and
-		// couldn't dig it".
 		if (d >= _grid.LayerCount || _grid.HasFragmentAt(x, y, d))
 		{
 			_flashes.Add(new Flash { X = x, Y = y, ElapsedMs = 0f });
@@ -53,27 +50,19 @@ public partial class HintsSystem : Node2D
 			return;
 		}
 
-		// Step constraint: flash every 4-neighbour that's shallower than this tile.
+		// Step constraint: flash every hex neighbor that is shallower than this tile.
 		bool anyAdded = false;
-		ReadOnlySpan<(int dx, int dy)> n = stackalloc (int, int)[]
+		Span<Vector2I> neighbors = stackalloc Vector2I[6];
+		HexMetrics.GetNeighbors(x, y, neighbors);
+		foreach (var n in neighbors)
 		{
-			(1, 0), (-1, 0), (0, 1), (0, -1)
-		};
-		foreach (var (dx, dy) in n)
-		{
-			int nx = x + dx;
-			int ny = y + dy;
-			if (!_grid.InBounds(nx, ny)) continue;
-			if (_grid.GetDepth(nx, ny) >= d) continue; // not a preventer
-			_flashes.Add(new Flash { X = nx, Y = ny, ElapsedMs = 0f });
+			if (!_grid.InBounds(n.X, n.Y)) continue;
+			if (_grid.GetDepth(n.X, n.Y) >= d) continue;
+			_flashes.Add(new Flash { X = n.X, Y = n.Y, ElapsedMs = 0f });
 			anyAdded = true;
 		}
-		// Fallback — shouldn't happen for step-blocked digs, but if nothing
-		// flashed, at least flash the attempted tile so the failure is visible.
 		if (!anyAdded)
-		{
 			_flashes.Add(new Flash { X = x, Y = y, ElapsedMs = 0f });
-		}
 		QueueRedraw();
 	}
 
@@ -93,17 +82,19 @@ public partial class HintsSystem : Node2D
 		QueueRedraw();
 	}
 
+	private readonly Vector2[] _hexVerts = new Vector2[6];
+
 	public override void _Draw()
 	{
 		if (_grid == null) return;
-		int tile = _grid.TileSize;
 		foreach (var f in _flashes)
 		{
 			float t = f.ElapsedMs / FadeMs;
 			float alpha = FlashPeakBrightness * Math.Max(0f, 1f - t);
 			var color = new Color(FlashColor.R, FlashColor.G, FlashColor.B, alpha);
-			var rect = new Rect2(f.X * tile, f.Y * tile, tile, tile);
-			DrawRect(rect, color);
+			var center = HexMetrics.CellCenter(f.X, f.Y, _grid.TileSize);
+			HexMetrics.HexVerticesAt(center, _grid.TileSize, _hexVerts);
+			DrawColoredPolygon(_hexVerts, color);
 		}
 	}
 }

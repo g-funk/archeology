@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 
 namespace Arkeology.Production.Client;
@@ -95,8 +96,8 @@ public partial class PlayerCharacter : Node2D
 		_grid.TriggerScan(cell.X, cell.Y, _grid.GetDepth(cell.X, cell.Y));
 	}
 
-	// Queue the tile under the character and its 8 neighbors for sequential
-	// digging. Order: centre first, then the ring anti-clockwise from east.
+	// Queue the tile under the character and its 6 hex neighbors for sequential
+	// digging. Order: center first, then E, W, NE, NW, SE, SW.
 	// Re-triggering resets the queue to the character's current tile.
 	public void RequestDigAround()
 	{
@@ -105,40 +106,26 @@ public partial class PlayerCharacter : Node2D
 		var center = CurrentTile();
 		if (_grid.InBounds(center.X, center.Y)) _digQueue.Add(center);
 
-		var ring = new Vector2I[]
+		Span<Vector2I> neighbors = stackalloc Vector2I[6];
+		HexMetrics.GetNeighbors(center.X, center.Y, neighbors);
+		foreach (var n in neighbors)
 		{
-			new(1, 0),   // East
-			new(1, -1),  // North-East
-			new(0, -1),  // North
-			new(-1, -1), // North-West
-			new(-1, 0),  // West
-			new(-1, 1),  // South-West
-			new(0, 1),   // South
-			new(1, 1),   // South-East
-		};
-		foreach (var dir in ring)
-		{
-			int nx = center.X + dir.X;
-			int ny = center.Y + dir.Y;
-			if (_grid.InBounds(nx, ny)) _digQueue.Add(new Vector2I(nx, ny));
+			if (_grid.InBounds(n.X, n.Y)) _digQueue.Add(n);
 		}
 
-		// Fire the first tile on the very next _Process.
 		_digQueueTimer = CurrentDigIntervalMs();
 	}
 
 	public Vector2I CurrentTile()
 	{
 		if (_grid == null) return Vector2I.Zero;
-		return new Vector2I(
-			(int)Mathf.Floor(Position.X / _grid.TileSize),
-			(int)Mathf.Floor(Position.Y / _grid.TileSize));
+		return HexMetrics.WorldToCell(Position, _grid.TileSize);
 	}
 
 	private Vector2 CellCenter(Vector2I cell)
 	{
 		if (_grid == null) return Vector2.Zero;
-		return new Vector2((cell.X + 0.5f) * _grid.TileSize, (cell.Y + 0.5f) * _grid.TileSize);
+		return HexMetrics.CellCenter(cell.X, cell.Y, _grid.TileSize);
 	}
 
 	private float CurrentDigIntervalMs()
