@@ -32,6 +32,10 @@ Game design lives in [`design/DESIGN-SIMPLE.md`](design/DESIGN-SIMPLE.md). Addit
 
 ---
 
+## Bookkeeping
+
+You will document relevant information about the features to ai-docs/. See below for more information.
+
 ## Implementation reference (`ai-docs/`)
 
 One doc per implemented feature describing current code: file paths, data model, behavior, tunables, cross-feature seams. **Read the relevant doc before changing a feature, and update it in the same change.**
