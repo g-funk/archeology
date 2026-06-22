@@ -344,7 +344,7 @@ public partial class Grid : Node2D
 
 	public override void _Draw()
 	{
-		// Floors first; walls on top to cap the deeper hex edges.
+		// Floors first; outlines and walls on top.
 		for (int x = 0; x < Width; x++)
 		{
 			for (int y = 0; y < Height; y++)
@@ -354,7 +354,39 @@ public partial class Grid : Node2D
 				DrawColoredPolygon(_hexVerts, FloorColorFor(x, y));
 			}
 		}
+		DrawHexOutlines();
 		DrawHexWalls();
+	}
+
+	private void DrawHexOutlines()
+	{
+		var brown = new Color(0.32f, 0.18f, 0.08f);
+		Span<Vector2I> neighbors = stackalloc Vector2I[6];
+
+		for (int x = 0; x < Width; x++)
+		{
+			for (int y = 0; y < Height; y++)
+			{
+				int d = _depth[x, y];
+				var center = HexMetrics.CellCenter(x, y, TileSize);
+				HexMetrics.HexVerticesAt(center, TileSize, _hexVerts);
+				HexMetrics.GetNeighbors(x, y, neighbors);
+
+				for (int i = 0; i < 6; i++)
+				{
+					var n = neighbors[i];
+					// Skip edges that already have a shadow/highlight wall.
+					if (InBounds(n.X, n.Y) && _depth[n.X, n.Y] < d) continue;
+					// Deduplicate same-depth interior edges: draw only from the earlier tile.
+					if (InBounds(n.X, n.Y) && _depth[n.X, n.Y] == d)
+					{
+						if (n.Y < y || (n.Y == y && n.X < x)) continue;
+					}
+					var (va, vb) = HexMetrics.EdgeForNeighbor(i);
+					DrawLine(_hexVerts[va], _hexVerts[vb], brown, 1f, true);
+				}
+			}
+		}
 	}
 
 	private void DrawHexWalls()
@@ -404,7 +436,7 @@ public partial class Grid : Node2D
 	{
 		int d = _depth[x, y];
 
-		if (d >= LayerCount) return new Color(0.05f, 0.04f, 0.03f);
+		if (d >= LayerCount) return new Color(0.08f, 0.06f, 0.04f);
 
 		var frag = _fragmentAt[x, y, d];
 		if (frag != null)
@@ -419,7 +451,7 @@ public partial class Grid : Node2D
 			var deeperFrag = _fragmentAt[x, y, probe];
 			if (deeperFrag == null) continue;
 			if (AnyNeighborDeeperThan(x, y, probe))
-				return Darken(new Color(0.60f, 0.50f, 0.28f), d);
+				return Darken(new Color(0.70f, 0.58f, 0.34f), d);
 			break;
 		}
 
@@ -428,11 +460,11 @@ public partial class Grid : Node2D
 
 	private static Color MaterialColor(TileType type, int hp) => type switch
 	{
-		TileType.Soil   => new Color(0.42f, 0.30f, 0.18f),
+		TileType.Soil   => new Color(0.52f, 0.38f, 0.22f),
 		TileType.Stone  => hp >= 2
-			? new Color(0.42f, 0.42f, 0.48f)
-			: new Color(0.58f, 0.58f, 0.64f),
-		TileType.Empty  => new Color(0.10f, 0.08f, 0.07f),
+			? new Color(0.52f, 0.52f, 0.58f)
+			: new Color(0.68f, 0.68f, 0.74f),
+		TileType.Empty  => new Color(0.13f, 0.10f, 0.08f),
 		_               => Colors.Magenta,
 	};
 
