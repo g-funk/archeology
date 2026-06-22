@@ -39,9 +39,9 @@ public partial class CameraController : Camera2D
 		var viewport = GetViewportRect().Size;
 
 		float left = Margin;
-		float top = HudTopHeight;
+		float top = HudTopHeight + Margin;
 		float right = viewport.X - SidePanelWidth - Margin;
-		float bottom = viewport.Y - HudBottomHeight;
+		float bottom = viewport.Y - HudBottomHeight - Margin;
 		float availW = right - left;
 		float availH = bottom - top;
 

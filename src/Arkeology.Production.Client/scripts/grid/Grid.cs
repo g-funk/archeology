@@ -344,6 +344,9 @@ public partial class Grid : Node2D
 
 	public override void _Draw()
 	{
+		// Grass background behind the entire grid (fills the surroundings).
+		DrawRect(new Rect2(-100000f, -100000f, 200000f, 200000f), GameColors.Sand);
+
 		// Floors first; outlines and walls on top.
 		for (int x = 0; x < Width; x++)
 		{
@@ -360,7 +363,7 @@ public partial class Grid : Node2D
 
 	private void DrawHexOutlines()
 	{
-		var brown = new Color(0.32f, 0.18f, 0.08f);
+		var brown = GameColors.HexOutline;
 		Span<Vector2I> neighbors = stackalloc Vector2I[6];
 
 		for (int x = 0; x < Width; x++)
@@ -392,8 +395,8 @@ public partial class Grid : Node2D
 	private void DrawHexWalls()
 	{
 		int unit = Math.Max(2, TileSize / 10);
-		var shadow    = new Color(0.04f, 0.03f, 0.02f);
-		var highlight = new Color(0.75f, 0.75f, 0.73f);
+		var shadow    = GameColors.WallShadow;
+		var highlight = GameColors.WallHighlight;
 
 		Span<Vector2I> neighbors = stackalloc Vector2I[6];
 
@@ -436,14 +439,14 @@ public partial class Grid : Node2D
 	{
 		int d = _depth[x, y];
 
-		if (d >= LayerCount) return new Color(0.08f, 0.06f, 0.04f);
+		if (d >= LayerCount) return GameColors.DepthFloor;
 
 		var frag = _fragmentAt[x, y, d];
 		if (frag != null)
 		{
 			return IsFragmentFullyExposed(frag)
-				? Darken(new Color(1.00f, 0.92f, 0.55f), d)
-				: Darken(new Color(1.00f, 0.82f, 0.32f), d);
+				? Darken(GameColors.FragmentExposed, d)
+				: Darken(GameColors.FragmentBuried, d);
 		}
 
 		for (int probe = d + 1; probe < LayerCount; probe++)
@@ -451,7 +454,7 @@ public partial class Grid : Node2D
 			var deeperFrag = _fragmentAt[x, y, probe];
 			if (deeperFrag == null) continue;
 			if (AnyNeighborDeeperThan(x, y, probe))
-				return Darken(new Color(0.70f, 0.58f, 0.34f), d);
+				return Darken(GameColors.FragmentHint, d);
 			break;
 		}
 
@@ -460,12 +463,10 @@ public partial class Grid : Node2D
 
 	private static Color MaterialColor(TileType type, int hp) => type switch
 	{
-		TileType.Soil   => new Color(0.52f, 0.38f, 0.22f),
-		TileType.Stone  => hp >= 2
-			? new Color(0.52f, 0.52f, 0.58f)
-			: new Color(0.68f, 0.68f, 0.74f),
-		TileType.Empty  => new Color(0.13f, 0.10f, 0.08f),
-		_               => Colors.Magenta,
+		TileType.Soil   => GameColors.Grass,
+		TileType.Stone  => hp >= 2 ? GameColors.StoneFull : GameColors.StoneDamaged,
+		TileType.Empty  => GameColors.Void,
+		_               => Godot.Colors.Magenta,
 	};
 
 	private static Color Darken(Color c, int depth)
