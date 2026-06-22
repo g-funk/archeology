@@ -36,6 +36,7 @@ public partial class Grid : Node2D
 
 	// Reused per _Draw call to avoid per-tile allocation.
 	private readonly Vector2[] _hexVerts = new Vector2[6];
+	private readonly Vector2[] _wallQuad = new Vector2[4];
 
 	public int FragmentsCollected { get; private set; }
 	public IReadOnlyList<Fragment> CollectedFragments => _collectedFragments;
@@ -378,12 +379,22 @@ public partial class Grid : Node2D
 					var n = neighbors[i];
 					if (!InBounds(n.X, n.Y)) continue;
 					int nd = _depth[n.X, n.Y];
-					if (d <= nd) continue; // this tile is not deeper than that neighbor
+					if (d <= nd) continue;
 
-					int wallThick = unit * (d - nd);
+					float wallThick = unit * (d - nd);
 					var (va, vb) = HexMetrics.EdgeForNeighbor(i);
 					var color = HexMetrics.IsHighlightEdge(i) ? highlight : shadow;
-					DrawLine(_hexVerts[va], _hexVerts[vb], color, wallThick);
+
+					// Draw a filled quad rather than DrawLine to avoid rounded capsule
+					// ends and AA artifacts. The quad runs along the hex edge and steps
+					// inward (toward the tile center) by wallThick pixels.
+					var edgeMid = (_hexVerts[va] + _hexVerts[vb]) * 0.5f;
+					var inward = (center - edgeMid).Normalized() * wallThick;
+					_wallQuad[0] = _hexVerts[va];
+					_wallQuad[1] = _hexVerts[vb];
+					_wallQuad[2] = _hexVerts[vb] + inward;
+					_wallQuad[3] = _hexVerts[va] + inward;
+					DrawColoredPolygon(_wallQuad, color);
 				}
 			}
 		}
