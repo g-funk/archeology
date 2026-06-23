@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Arkeology.Production.Client;
 
@@ -11,10 +12,9 @@ public partial class Grid : Node2D
 	// Hex circumradius (center-to-vertex) in pixels.
 	[Export] public int TileSize { get; set; } = 22;
 	[Export] public int Seed { get; set; } = 1337;
-	[Export] public int MinFragments { get; set; } = 4;
-	[Export] public int MaxFragments { get; set; } = 8;
-	[Export] public int MinFragmentTiles { get; set; } = 4;
-	[Export] public int MaxFragmentTiles { get; set; } = 16;
+	[Export] public int MapIndex { get; set; } = 0;
+	[Export] public string MapsConfigPath { get; set; } = "res://data/maps.bin";
+	[Export] public string ItemsConfigPath { get; set; } = "res://data/items.bin";
 	[Export] public int LayerCount { get; set; } = 4;
 	[Export] public int MaxCollapse { get; set; } = 2;
 	[Export] public float CollapseChance { get; set; } = 0.15f;
@@ -49,6 +49,15 @@ public partial class Grid : Node2D
 
 	public void Generate()
 	{
+		var map = LoadMapConfig();
+
+		if (map != null)
+		{
+			Width = map.Width;
+			Height = map.Height;
+			LayerCount = map.Layers.Count;
+		}
+
 		_layerTypes = new TileType[Width, Height, LayerCount];
 		_layerHp = new int[Width, Height, LayerCount];
 		_depth = new int[Width, Height];
@@ -65,115 +74,118 @@ public partial class Grid : Node2D
 			{
 				for (int d = 0; d < LayerCount; d++)
 				{
-					if (_rng.NextDouble() < 0.32)
+					if (map != null && d < map.Layers.Count && !map.Layers[d].IsRandom && map.Layers[d].Tiles != null)
 					{
-						_layerTypes[x, y, d] = TileType.Stone;
-						_layerHp[x, y, d] = 2;
+						var tileType = map.Layers[d].Tiles![y * Width + x];
+						_layerTypes[x, y, d] = tileType;
+						_layerHp[x, y, d] = HpForType(tileType);
 					}
 					else
 					{
-						_layerTypes[x, y, d] = TileType.Soil;
-						_layerHp[x, y, d] = 1;
+						if (_rng.NextDouble() < 0.32)
+						{
+							_layerTypes[x, y, d] = TileType.Stone;
+							_layerHp[x, y, d] = 2;
+						}
+						else
+						{
+							_layerTypes[x, y, d] = TileType.Soil;
+							_layerHp[x, y, d] = 1;
+						}
 					}
 				}
 			}
 		}
 
-		SpawnFragments(_rng);
+		if (map != null)
+			PlaceConfigShapes(map);
 
 		EmitSignal(SignalName.FragmentsChanged, FragmentsCollected);
 		QueueRedraw();
 	}
 
-	private void SpawnFragments(Random rng)
+	private MapConfig? LoadMapConfig()
 	{
-		if (LayerCount <= 1) return;
-
-		int target = Math.Max(0, MinFragments) + rng.Next(Math.Max(0, MaxFragments - MinFragments) + 1);
-		const int maxAttempts = 500;
-		int attempts = 0;
-		while (_fragments.Count < target && attempts < maxAttempts)
+		using var mapsFile = Godot.FileAccess.Open(MapsConfigPath, Godot.FileAccess.ModeFlags.Read);
+		if (mapsFile == null)
 		{
-			attempts++;
+			GD.PrintErr($"[Grid] maps config not found: {MapsConfigPath}");
+			return null;
+		}
+		var mapsBytes = mapsFile.GetBuffer((long)mapsFile.GetLength());
+		mapsFile.Close();
 
-			int tileCount = Math.Max(1, MinFragmentTiles) + rng.Next(Math.Max(0, MaxFragmentTiles - MinFragmentTiles) + 1);
-			var cells = GenerateRandomShape(tileCount, rng);
+		using var mapsStream = new MemoryStream(mapsBytes);
+		var maps = new MapsConfigReader().Read(mapsStream);
 
-			int shapeW = 1, shapeH = 1;
-			foreach (var c in cells)
+		if (maps.Count == 0)
+		{
+			GD.PrintErr("[Grid] maps config is empty");
+			return null;
+		}
+
+		int idx = Math.Clamp(MapIndex, 0, maps.Count - 1);
+		return maps[idx];
+	}
+
+	private IReadOnlyList<ItemConfig>? LoadItems()
+	{
+		using var itemsFile = Godot.FileAccess.Open(ItemsConfigPath, Godot.FileAccess.ModeFlags.Read);
+		if (itemsFile == null)
+		{
+			GD.PrintErr($"[Grid] items config not found: {ItemsConfigPath}");
+			return null;
+		}
+		var bytes = itemsFile.GetBuffer((long)itemsFile.GetLength());
+		itemsFile.Close();
+
+		using var stream = new MemoryStream(bytes);
+		return new ItemsConfigReader().Read(stream);
+	}
+
+	private void PlaceConfigShapes(MapConfig map)
+	{
+		var items = LoadItems();
+		if (items == null) return;
+
+		var itemById = new Dictionary<int, ItemConfig>(items.Count);
+		foreach (var item in items)
+			itemById[item.Id] = item;
+
+		foreach (var shape in map.Shapes)
+		{
+			if (!itemById.TryGetValue(shape.ItemId, out var itemCfg)) continue;
+			if (shape.Layer < 0 || shape.Layer >= LayerCount) continue;
+
+			var cells = new List<Vector2I>();
+			for (int sy = 0; sy < itemCfg.ShapeHeight; sy++)
 			{
-				if (c.X + 1 > shapeW) shapeW = c.X + 1;
-				if (c.Y + 1 > shapeH) shapeH = c.Y + 1;
-			}
-			if (shapeW > Width || shapeH > Height) continue;
-
-			int ax = rng.Next(Width - shapeW + 1);
-			int ay = rng.Next(Height - shapeH + 1);
-			int depth = 1 + rng.Next(LayerCount - 1);
-
-			var abs = new Vector2I[cells.Length];
-			bool fits = true;
-			for (int i = 0; i < cells.Length; i++)
-			{
-				int cx = ax + cells[i].X;
-				int cy = ay + cells[i].Y;
-				if (!InBounds(cx, cy) || _fragmentAt[cx, cy, depth] != null)
+				for (int sx = 0; sx < itemCfg.ShapeWidth; sx++)
 				{
-					fits = false;
-					break;
+					if (!itemCfg.IsShapeOccupied(sx, sy)) continue;
+					int gx = shape.X + sx;
+					int gy = shape.Y + sy;
+					if (!InBounds(gx, gy)) continue;
+					if (_fragmentAt[gx, gy, shape.Layer] != null) continue;
+					cells.Add(new Vector2I(gx, gy));
 				}
-				abs[i] = new Vector2I(cx, cy);
 			}
-			if (!fits) continue;
 
-			var frag = new Fragment(_fragments.Count, FragmentShape.SquareTwo, depth, abs);
+			if (cells.Count == 0) continue;
+
+			var frag = new Fragment(shape.ItemId, FragmentShape.SquareTwo, shape.Layer, cells);
 			_fragments.Add(frag);
-			foreach (var c in abs) _fragmentAt[c.X, c.Y, depth] = frag;
+			foreach (var c in cells)
+				_fragmentAt[c.X, c.Y, shape.Layer] = frag;
 		}
 	}
 
-	// Grows a random hex-connected polyomino. Starts with one cell; repeatedly
-	// picks a random empty 6-neighbor and adds it. Result is normalized to min X=0, Y=0.
-	private static Vector2I[] GenerateRandomShape(int tileCount, Random rng)
+	private static int HpForType(TileType type) => type switch
 	{
-		var cells = new HashSet<Vector2I>();
-		var perimeter = new List<Vector2I>();
-
-		var seed = new Vector2I(0, 0);
-		cells.Add(seed);
-		AddHexPerimeter(seed, cells, perimeter);
-
-		while (cells.Count < tileCount && perimeter.Count > 0)
-		{
-			int idx = rng.Next(perimeter.Count);
-			var newCell = perimeter[idx];
-			perimeter.RemoveAt(idx);
-
-			if (!cells.Add(newCell)) continue;
-			AddHexPerimeter(newCell, cells, perimeter);
-		}
-
-		int minX = int.MaxValue, minY = int.MaxValue;
-		foreach (var c in cells)
-		{
-			if (c.X < minX) minX = c.X;
-			if (c.Y < minY) minY = c.Y;
-		}
-		var result = new Vector2I[cells.Count];
-		int i2 = 0;
-		foreach (var c in cells) result[i2++] = new Vector2I(c.X - minX, c.Y - minY);
-		return result;
-	}
-
-	private static void AddHexPerimeter(Vector2I cell, HashSet<Vector2I> cells, List<Vector2I> perimeter)
-	{
-		Span<Vector2I> neighbors = stackalloc Vector2I[6];
-		HexMetrics.GetNeighbors(cell.X, cell.Y, neighbors);
-		foreach (var n in neighbors)
-		{
-			if (!cells.Contains(n)) perimeter.Add(n);
-		}
-	}
+		TileType.Stone => 2,
+		TileType.Soil  => 1,
+		_              => 1,
+	};
 
 	public bool InBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
 

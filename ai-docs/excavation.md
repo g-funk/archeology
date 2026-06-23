@@ -172,14 +172,39 @@ The collection panel ([ai-docs/collection.md](collection.md)) reads back the gri
 
 ---
 
+## Config-driven generation
+
+`Grid._Ready` calls `Generate()`, which loads map and item configs from binary files before allocating arrays. If the files are missing or unreadable it logs an error (via `GD.PrintErr`) but still produces a usable grid using the exported tunables.
+
+### Binary config files
+
+| Path (inside Godot project) | Produced by |
+|---|---|
+| `res://data/maps.bin` | `.claude/skills/maps-to-bin/convert.py` |
+| `res://data/items.bin` | `.claude/skills/items-to-bin/convert.py` |
+
+Readers: `MapsConfigReader` → `MapConfig` / `MapLayerConfig` / `MapShapeConfig`; `ItemsConfigReader` → `ItemConfig`.
+
+### Map config drives
+
+- `Width`, `Height`, `LayerCount` — overridden from the map record (exported values become fallbacks only when no config is loaded).
+- **Layer terrain** — each layer has an `info byte`: `0` = random (32% stone), `1` = tile data provided (W×H `TileType` bytes from config).
+- **Fragment (BMI) placement** — each map shape entry specifies `(ItemId, Layer, X, Y)`; the shape bitmap from `ItemConfig` is expanded into `Fragment.Cells` and registered in `_fragmentAt`.
+
+### ItemConfig shape data
+
+`ItemConfig` stores `ShapeWidth`, `ShapeHeight`, and a row-major `bool[]` bitmap (MSB-first, matching the Python writer). `IsShapeOccupied(x, y)` checks a single cell. `Grid.PlaceConfigShapes` iterates the bitmap to build `Vector2I` cell lists for each `Fragment`.
+
 ## Tunables (exported on the `Grid` node)
 
-- `Width` — columns
-- `Height` — rows
+- `Width` — columns (overridden by map config when loaded)
+- `Height` — rows (overridden by map config when loaded)
 - `TileSize` — pixel size of one tile
-- `Seed` — RNG seed (terrain + fragment placement)
-- `FragmentTarget` — see [ai-docs/collection.md](collection.md)
-- `LayerCount` — number of dig-able layers; depths go `0..LayerCount-1`, then bedrock at `LayerCount`
+- `Seed` — RNG seed for random layers and collapse
+- `MapIndex` — which map to load from `maps.bin` (0-based; clamped to available count)
+- `MapsConfigPath` — Godot resource path to `maps.bin` (default `res://data/maps.bin`)
+- `ItemsConfigPath` — Godot resource path to `items.bin` (default `res://data/items.bin`)
+- `LayerCount` — fallback layer count when no config is loaded
 
 ---
 
