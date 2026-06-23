@@ -33,10 +33,11 @@ def load_predefined(json_path=None):
 
 
 class Tokenizer:
-    USER_TOKEN_START   = 2000
+    USER_TOKEN_START    = 2000
     TOKEN_LIST_PTR_BASE = 20000
 
-    def __init__(self, no_space, normal):
+    def __init__(self, no_space, normal, tokenized=True):
+        self._tokenized      = tokenized
         self._no_space       = no_space   # value → id (0–999)
         self._normal         = normal     # value → id (1000–1999)
         self._no_space_chars = {v for v in no_space if len(v) == 1}
@@ -50,7 +51,13 @@ class Tokenizer:
     # ------------------------------------------------------------------
 
     def tokenize(self, text):
-        """Tokenize text and return a ushort string pointer."""
+        """Tokenize text and return a ushort string pointer.
+
+        In naive mode (tokenized=False) the whole string is stored as a single
+        user token with no splitting or predefined-token substitution.
+        """
+        if not self._tokenized:
+            return self._intern(text)
         ids = []
         for word in text.split():
             ids.extend(self._split_word(word))
@@ -102,6 +109,13 @@ class Tokenizer:
         for p in trailing:
             result.append(self._no_space[p])
         return result
+
+    def _intern(self, text):
+        """Store the whole string as a single user token (naive mode)."""
+        if text not in self._user_tokens:
+            self._user_tokens[text] = self._next_user_id
+            self._next_user_id += 1
+        return self._user_tokens[text]
 
     def _lookup(self, word):
         """Return token ID for a word; assign a user token ID if unknown."""

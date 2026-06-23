@@ -39,6 +39,7 @@ File layout:
 String pointers: value < 20000 is a single token ID; >= 20000 means (value - 20000) is
 an index into the token list table.  See CONFIG_STRINGS.md.
 """
+import argparse
 import os
 import struct
 import sys
@@ -157,27 +158,32 @@ def hex_dump(data):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: convert.py <input_file> [output_file]", file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='Convert maps source data to binary config.')
+    parser.add_argument('input_file')
+    parser.add_argument('output_file', nargs='?')
+    parser.add_argument('--tokenized', action='store_true',
+                        help='Split strings into predefined+user tokens. '
+                             'Without this flag each string is stored as a single UTF-8 user token.')
+    args = parser.parse_args()
 
-    with open(sys.argv[1], encoding='utf-8') as f:
+    with open(args.input_file, encoding='utf-8') as f:
         text = f.read()
 
     no_space, normal = load_predefined()
-    tokenizer        = Tokenizer(no_space, normal)
+    tokenizer        = Tokenizer(no_space, normal, tokenized=args.tokenized)
     maps             = parse_maps(text)
     data             = encode(maps, tokenizer)
 
-    if len(sys.argv) > 2:
-        with open(sys.argv[2], 'wb') as f:
+    if args.output_file:
+        with open(args.output_file, 'wb') as f:
             f.write(data)
-        print(f"Wrote {len(data)} bytes → {sys.argv[2]}")
+        print(f"Wrote {len(data)} bytes → {args.output_file}")
     else:
         hex_dump(data)
 
+    mode = 'tokenized' if args.tokenized else 'naive'
     print(
-        f"{tokenizer.user_token_count} user token(s), "
+        f"[{mode}] {tokenizer.user_token_count} user token(s), "
         f"{tokenizer.token_list_count} token list(s), "
         f"{len(maps)} map(s):",
         file=sys.stderr,

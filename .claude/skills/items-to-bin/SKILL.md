@@ -2,10 +2,12 @@ Convert archaeology item source data to binary format using the script at `.clau
 
 When given a file path as the argument, run:
 ```
-python3 .claude/skills/items-to-bin/convert.py <input_file> [output_file]
+python3 .claude/skills/items-to-bin/convert.py <input_file> [output_file] [--tokenized]
 ```
 
 If no output file is given, a hex dump is printed to stdout. Show the hex dump and the summary to the user. If an output path is provided, confirm the byte count and path.
+
+`--tokenized` enables full string tokenization (predefined + user tokens + token lists). Without it, each string is stored as a single UTF-8 user token (naive mode).
 
 # Binary file layout
 
