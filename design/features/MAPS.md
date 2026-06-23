@@ -43,4 +43,28 @@ In future we will want to design the maps better, or change the procedural gener
 
 # Config
 
-TBD
+Id: ushort
+Width: byte
+Height: byte 
+Name: ushort token/list pointer
+Description: ushort token/list pointer
+Layer count: byte
+For each layer:
+  Info byte: byte
+  Data bytes: 0 or W * Y bytes
+Shape count: byte
+For each shape:
+  Id: ushort, points to Items config
+  Layer: byte
+  X: byte, top-left corner
+  Y: byte, top-left corner
+
+ Layers start numbering from top down, index 0 is the topmost layer. In the layer data the "info byte" is read as follows:
+ 0=the layer is random generated like currently. There are no data bytes following.
+ 1=the layer data is provided in the next bytes. There are Width * Height bytes following
+
+ The data bytes correspond to TileType enum.
+
+ ## Future considerations
+
+ The layer data currently wastes data and can be compacted. But until we settle with the number of materials, we can just use a byte per tile.
