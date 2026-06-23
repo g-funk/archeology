@@ -13,8 +13,9 @@ public partial class Grid : Node2D
 	[Export] public int TileSize { get; set; } = 22;
 	[Export] public int Seed { get; set; } = 1337;
 	[Export] public int MapIndex { get; set; } = 0;
-	[Export] public string MapsConfigPath { get; set; } = "res://data/maps.bin";
-	[Export] public string ItemsConfigPath { get; set; } = "res://data/items.bin";
+	[Export] public string PredefinedTokensPath { get; set; } = "res://config/json/predefined_tokens.json";
+	[Export] public string MapsConfigPath { get; set; } = "res://config/binary/maps.bin";
+	[Export] public string ItemsConfigPath { get; set; } = "res://config/binary/items.bin";
 	[Export] public int LayerCount { get; set; } = 4;
 	[Export] public int MaxCollapse { get; set; } = 2;
 	[Export] public float CollapseChance { get; set; } = 0.15f;
@@ -49,6 +50,7 @@ public partial class Grid : Node2D
 
 	public void Generate()
 	{
+		StringTable.Configure(ProjectSettings.GlobalizePath(PredefinedTokensPath));
 		var map = LoadMapConfig();
 
 		if (map != null)
