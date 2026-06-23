@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "comment": "Predefined tokens are a versioned contract between encoder and decoder — never written to the binary. IDs 0–999 are no-space (attach to preceding token without a leading space). IDs 1000–1999 are normal (preceded by a space when rendered). Changing any entry requires a version bump. Must be kept in sync with PredefinedTokens.LoadDefault() in C#.",
+  "no_space": [
+    {"id": 1, "value": " "},
+    {"id": 2, "value": ","},
+    {"id": 3, "value": "."},
+    {"id": 4, "value": "!"},
+    {"id": 5, "value": "?"},
+    {"id": 6, "value": ":"},
+    {"id": 7, "value": ";"},
+    {"id": 8, "value": ")"},
+    {"id": 9, "value": "'"}
+  ],
+  "normal": [
+    {"id": 1000, "value": "The"},
+    {"id": 1001, "value": "the"},
+    {"id": 1002, "value": "A"},
+    {"id": 1003, "value": "a"},
+    {"id": 1004, "value": "An"},
+    {"id": 1005, "value": "an"},
+    {"id": 1006, "value": "\n"},
+    {"id": 1007, "value": "is"},
+    {"id": 1008, "value": "are"},
+    {"id": 1009, "value": "was"},
+    {"id": 1010, "value": "were"},
+    {"id": 1011, "value": "of"},
+    {"id": 1012, "value": "in"},
+    {"id": 1013, "value": "to"},
+    {"id": 1014, "value": "and"},
+    {"id": 1015, "value": "or"},
+    {"id": 1016, "value": "for"},
+    {"id": 1017, "value": "with"},
+    {"id": 1018, "value": "that"},
+    {"id": 1019, "value": "this"},
+    {"id": 1020, "value": "it"},
+    {"id": 1021, "value": "from"},
+    {"id": 1022, "value": "("}
+  ]
+}

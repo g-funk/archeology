@@ -1,28 +1,46 @@
 #!/usr/bin/env python3
-"""Convert items source data (.md) to binary format as specified in design/features/ITEMS.md.
+"""Convert items source data (.md) to binary format (design/features/ITEMS.md + CONFIG.md).
 
 File layout:
-  uint16  string_count
-  for each string: uint16 byte_length + UTF-8 bytes
-  uint16  item_count
-  for each item:
-    uint16  id
-    uint8   rarity         (common=0, uncommon=1, rare=2, epic=3, legendary=4)
-    uint8   parts_count
-    uint16  parts_ids[parts_count]
-    uint16  name_idx       (index into string table)
-    uint16  desc_idx       (index into string table)
-    uint8   shape_w
-    uint8   shape_h
-    bytes   shape_bitmap   (ceil(w*h/8) bytes, MSB first; empty when w*h==0)
+  [header]
+    uint8   version_major
+    uint8   version_minor
+    int64   build_epoch (seconds since Unix epoch, little-endian)
+  [token table]
+    uint16  user_token_count
+    for each user token (ID 2000, 2001, ...):
+      uint8   byte_length
+      utf-8   bytes
+  [token list table]
+    uint16  token_list_count
+    for each token list:
+      uint8   token_count
+      uint16  token_ids[token_count]
+  [item data]
+    uint16  item_count
+    for each item:
+      uint16  id
+      uint8   rarity         (common=0, uncommon=1, rare=2, epic=3, legendary=4)
+      uint8   parts_count
+      uint16  parts_ids[parts_count]
+      uint16  name_ptr       (token ID if <20000, else token list index + 20000)
+      uint16  desc_ptr
+      uint8   shape_w
+      uint8   shape_h
+      bytes   shape_bitmap   (ceil(w*h/8) bytes, MSB first; omitted when w*h==0)
 
-All multi-byte integers are little-endian.
-Shape bitmap: first cell → bit 7 of byte 0, reading left-to-right top-to-bottom.
+String pointers: value < 20000 is a single token ID; >= 20000 means (value - 20000) is
+an index into the token list table.  See CONFIG_STRINGS.md.
 """
+import os
 import struct
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from lib.tokens import load_predefined, Tokenizer, encode_header
+
 RARITIES = {'common': 0, 'uncommon': 1, 'rare': 2, 'epic': 3, 'legendary': 4}
+VERSION  = (1, 0)
 
 
 def is_shape_row(line):
@@ -31,9 +49,9 @@ def is_shape_row(line):
 
 
 def shape_to_bitmap(shape_data):
-    bits = [int(c) for c in shape_data]
+    bits    = [int(c) for c in shape_data]
     n_bytes = (len(bits) + 7) // 8
-    result = bytearray(n_bytes)
+    result  = bytearray(n_bytes)
     for i, b in enumerate(bits):
         if b:
             result[i // 8] |= 0x80 >> (i % 8)
@@ -41,24 +59,15 @@ def shape_to_bitmap(shape_data):
 
 
 def parse_items(text):
-    strings = []
-    str_index = {}
-
-    def intern_str(s):
-        if s not in str_index:
-            str_index[s] = len(strings)
-            strings.append(s)
-        return str_index[s]
-
     items = []
     for block in text.split('---'):
         lines = block.strip().splitlines()
         if not lines:
             continue
 
-        item = {}
+        item      = {}
         shape_rows = []
-        in_shape = False
+        in_shape   = False
 
         for line in lines:
             stripped = line.strip()
@@ -70,47 +79,44 @@ def parse_items(text):
                 shape_rows.append(stripped)
             elif '=' in line and not in_shape:
                 key, _, value = line.partition('=')
-                key = key.strip()
-                value = value.strip()
-                if key == 'id':          item['id'] = int(value)
-                elif key == 'r':         item['rarity'] = value
-                elif key == 'name':      item['name'] = value
-                elif key == 'description': item['description'] = value
+                key = key.strip(); value = value.strip()
+                if key == 'id':            item['id']          = int(value)
+                elif key == 'r':           item['rarity']       = value
+                elif key == 'name':        item['name']         = value
+                elif key == 'description': item['description']  = value
                 elif key == 'p':
                     item['parts'] = [int(x.strip()) for x in value.split(',') if x.strip()]
 
         if shape_rows:
             h = len(shape_rows)
             w = max(len(r) for r in shape_rows)
-            item['shape_w'] = w
-            item['shape_h'] = h
+            item['shape_w']    = w
+            item['shape_h']    = h
             item['shape_data'] = ''.join(r.ljust(w, '0') for r in shape_rows)
 
         if 'id' not in item:
             continue
 
-        item.setdefault('rarity', 'common')
-        item.setdefault('name', '')
+        item.setdefault('rarity',      'common')
+        item.setdefault('name',        '')
         item.setdefault('description', '')
-        item.setdefault('parts', [])
-        item.setdefault('shape_w', 0)
-        item.setdefault('shape_h', 0)
-        item.setdefault('shape_data', '')
-        item['name_idx'] = intern_str(item['name'])
-        item['desc_idx'] = intern_str(item['description'])
+        item.setdefault('parts',       [])
+        item.setdefault('shape_w',     0)
+        item.setdefault('shape_h',     0)
+        item.setdefault('shape_data',  '')
         items.append(item)
 
-    return items, strings
+    return items
 
 
-def encode(items, strings):
-    buf = bytearray()
+def encode(items, tokenizer):
+    for item in items:
+        item['name_ptr'] = tokenizer.tokenize(item['name'])
+        item['desc_ptr'] = tokenizer.tokenize(item['description'])
 
-    buf += struct.pack('<H', len(strings))
-    for s in strings:
-        encoded = s.encode('utf-8')
-        buf += struct.pack('<H', len(encoded))
-        buf += encoded
+    buf  = bytearray()
+    buf += encode_header(*VERSION)
+    buf += tokenizer.encode_tables()
 
     buf += struct.pack('<H', len(items))
     for item in items:
@@ -122,8 +128,8 @@ def encode(items, strings):
         for pid in parts:
             buf += struct.pack('<H', pid)
 
-        buf += struct.pack('<H', item['name_idx'])
-        buf += struct.pack('<H', item['desc_idx'])
+        buf += struct.pack('<H', item['name_ptr'])
+        buf += struct.pack('<H', item['desc_ptr'])
 
         w, h = item['shape_w'], item['shape_h']
         buf += struct.pack('<B', w)
@@ -136,7 +142,7 @@ def encode(items, strings):
 
 def hex_dump(data):
     for off in range(0, len(data), 16):
-        chunk = data[off:off + 16]
+        chunk    = data[off:off + 16]
         hex_part = ' '.join(f'{b:02x}' for b in chunk)
         asc_part = ''.join(chr(b) if 32 <= b < 127 else '.' for b in chunk)
         print(f'{off:04x}  {hex_part:<47}  {asc_part}')
@@ -150,8 +156,10 @@ def main():
     with open(sys.argv[1], encoding='utf-8') as f:
         text = f.read()
 
-    items, strings = parse_items(text)
-    data = encode(items, strings)
+    no_space, normal = load_predefined()
+    tokenizer        = Tokenizer(no_space, normal)
+    items            = parse_items(text)
+    data             = encode(items, tokenizer)
 
     if len(sys.argv) > 2:
         with open(sys.argv[2], 'wb') as f:
@@ -160,11 +168,19 @@ def main():
     else:
         hex_dump(data)
 
-    print(f"{len(strings)} string(s), {len(items)} item(s):", file=sys.stderr)
+    print(
+        f"{tokenizer.user_token_count} user token(s), "
+        f"{tokenizer.token_list_count} token list(s), "
+        f"{len(items)} item(s):",
+        file=sys.stderr,
+    )
     for item in items:
-        parts = item['parts']
-        shape = f"{item['shape_w']}x{item['shape_h']}" if not parts else f"parts={parts}"
-        print(f"  id={item['id']} r={item['rarity']} '{item['name']}' {shape}", file=sys.stderr)
+        shape = f"{item['shape_w']}x{item['shape_h']}" if not item['parts'] else f"parts={item['parts']}"
+        print(
+            f"  id={item['id']} r={item['rarity']} '{item['name']}' {shape} "
+            f"name_ptr={item['name_ptr']} desc_ptr={item['desc_ptr']}",
+            file=sys.stderr,
+        )
 
 
 if __name__ == '__main__':
