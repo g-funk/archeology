@@ -10,25 +10,37 @@ If no output file is given, a hex dump is printed to stdout. Show the hex dump a
 # Binary file layout
 
 ```
-uint16  string_count
-for each string:
-  uint16  byte_length
-  utf-8 bytes
-uint16  item_count
-for each item:
-  uint16  id
-  uint8   rarity          (common=0, uncommon=1, rare=2, epic=3, legendary=4)
-  uint8   parts_count
-  uint16  parts_ids[parts_count]
-  uint16  name_idx        ← index into string table
-  uint16  desc_idx        ← index into string table
-  uint8   shape_w
-  uint8   shape_h
-  bytes   shape_bitmap    ← ceil(w*h/8) bytes; omitted when w*h==0
+[header]
+  uint8   version_major
+  uint8   version_minor
+  int64   build_epoch        (seconds since Unix epoch, little-endian)
+[token table]
+  uint16  user_token_count
+  for each user token (ID 2000, 2001, ...):
+    uint8   byte_length
+    utf-8   bytes
+[token list table]
+  uint16  token_list_count
+  for each token list:
+    uint8   token_count
+    uint16  token_ids[token_count]
+[item data]
+  uint16  item_count
+  for each item:
+    uint16  id
+    uint8   rarity           (common=0, uncommon=1, rare=2, epic=3, legendary=4)
+    uint8   parts_count
+    uint16  parts_ids[parts_count]
+    uint16  name_ptr         ← token ID (<20000) or token list index + 20000
+    uint16  desc_ptr
+    uint8   shape_w
+    uint8   shape_h
+    bytes   shape_bitmap     ← ceil(w*h/8) bytes, MSB first; omitted when w*h==0
 ```
 
 All multi-byte integers are little-endian.
 Shape bitmap: MSB first — first cell maps to bit 7 of byte 0, reading left-to-right top-to-bottom.
+Predefined tokens are loaded from `config/json/predefined_tokens.json`. See CONFIG_STRINGS.md.
 
 # Source format
 
