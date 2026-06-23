@@ -58,6 +58,7 @@ For each shape:
   Layer: byte
   X: byte, top-left corner
   Y: byte, top-left corner
+Scrap shape count: byte
 
  Layers start numbering from top down, index 0 is the topmost layer. In the layer data the "info byte" is read as follows:
  0=the layer is random generated like currently. There are no data bytes following.
@@ -65,6 +66,10 @@ For each shape:
 
  The data bytes correspond to TileType enum.
 
+ Scraps are generated randomly following the current rules.
+
  ## Future considerations
 
  The layer data currently wastes data and can be compacted. But until we settle with the number of materials, we can just use a byte per tile.
+
+ We might want more control on generating the scraps.
