@@ -12,14 +12,14 @@ r=common
 name=Tile
 description=Tile used for decorating walls and floors
 01111
-11111
+11110
 11110
 ---
 id=1001
 r=common
 name=The Drop Statue
 description=Mystical status that is able to balance on the narrow single foot
-01110
+11100
 11011
 10001
 11111
