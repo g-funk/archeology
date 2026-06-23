@@ -1,27 +1,28 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace Arkeology.Production.Client;
 
-public class StringTable {
-    private static Dictionary<ushort, string> BuildPredefinedIds() => new()
-    {
-        // No-space (0–999): punctuation attaches to preceding token without a leading space
-        [1] = " ", [2] = ",", [3] = ".", [4] = "!", [5] = "?", [6] = ":", [7] = ";", [8] = ")",
-        // Normal (1000–1999): rendered with a leading space
-        [1000] = "The", [1001] = "the", [1002] = "A", [1003] = "a",
-        [1004] = "An", [1005] = "an", [1006] = "\n",
-    };
+public class StringTable
+{
+    // Predefined tokens: versioned contract between encoder and decoder, never written to binary.
+    // Initialized from the embedded defaults in PredefinedTokens.LoadDefault().
+    // Call StringTable.Configure(jsonPath) at startup to load from the canonical JSON instead.
+    private static Dictionary<ushort, string> _predefinedById;
+    private static Dictionary<string, ushort> _predefinedByValue;
 
-    //todo: we shouldn't keep both of these in memory as one is needed for writing,
-    //and other is needed for reading
-    //
-    // Versioned contract between encoder and decoder — never written to binary.
-    // Changing any entry requires a version bump.
-    private static readonly Dictionary<ushort, string> PredefinedTokens = BuildPredefinedIds();
-    private static readonly Dictionary<string, ushort> PredefinedIds = PredefinedTokens.ToDictionary(p => p.Value, p => p.Key);
+    static StringTable()
+    {
+        (_predefinedById, _predefinedByValue) = PredefinedTokens.LoadDefault();
+    }
+
+    // Load predefined tokens from config/json/predefined_tokens.json.
+    // Call once at game startup before any config files are read.
+    public static void Configure(string jsonPath)
+    {
+        (_predefinedById, _predefinedByValue) = PredefinedTokens.Load(jsonPath);
+    }
 
     private readonly string[] _userTokens;
     private readonly ushort[][] _tokenLists;
@@ -34,16 +35,14 @@ public class StringTable {
 
     public string Resolve(ushort ptr)
     {
-        if (ptr < 2000)
-            return ResolvePredefined(ptr);
-        if (ptr < 20000)
-            return _userTokens[ptr - 2000];
+        if (ptr < 2000)  return ResolvePredefined(ptr);
+        if (ptr < 20000) return _userTokens[ptr - 2000];
         return ResolveList(ptr - 20000);
     }
 
     private static string ResolvePredefined(ushort id)
     {
-        if (!PredefinedTokens.TryGetValue(id, out var token))
+        if (!_predefinedById.TryGetValue(id, out var token))
             throw new InvalidOperationException(
                 $"Unknown predefined token ID {id}. " +
                 "Predefined token tables are version-locked — ensure encoder and decoder versions match.");
@@ -53,7 +52,7 @@ public class StringTable {
     private string ResolveList(int index)
     {
         var ids = _tokenLists[index];
-        var sb = new StringBuilder();
+        var sb  = new StringBuilder();
         for (var i = 0; i < ids.Length; i++)
         {
             var id = ids[i];
@@ -64,11 +63,10 @@ public class StringTable {
         return sb.ToString();
     }
 
-    public static bool TryGetPredefinedId(string s, out ushort id) {
-        return PredefinedIds.TryGetValue(s, out id);
-    }
-    
-    #if DEBUG
-    public String[] UserTokens => _userTokens;
-    #endif
+    public static bool TryGetPredefinedId(string s, out ushort id)
+        => _predefinedByValue.TryGetValue(s, out id);
+
+#if DEBUG
+    public string[] UserTokens => _userTokens;
+#endif
 }
