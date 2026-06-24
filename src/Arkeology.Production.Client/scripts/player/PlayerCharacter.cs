@@ -50,6 +50,18 @@ public partial class PlayerCharacter : Node2D
 		_targetPosition = Position;
 
 		_grid.Dug += OnDug;
+		_grid.MapAdvanced += ResetToCenter;
+	}
+
+	public void ResetToCenter()
+	{
+		if (_grid == null) return;
+		_digQueue.Clear();
+		_digElapsedMs = -1f;
+		_digPendingOnArrival = false;
+		var startCell = new Vector2I(_grid.Width / 2, _grid.Height / 2);
+		Position = CellCenter(startCell);
+		_targetPosition = Position;
 	}
 
 	// True while an autodig sweep is in progress. Movement inputs are ignored

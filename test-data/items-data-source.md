@@ -19,11 +19,12 @@ id=1001
 r=common
 name=The Drop Statue
 description=Mystical status that is able to balance on the narrow single foot
-11100
+11110
 11011
-10001
-11111
+10010
+01111
 01110
+00110
 00100
 ---
 id=1002

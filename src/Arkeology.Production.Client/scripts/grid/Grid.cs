@@ -25,6 +25,7 @@ public partial class Grid : Node2D
 	[Signal] public delegate void DigBlockedEventHandler(int x, int y);
 	[Signal] public delegate void ClickedEventHandler(int x, int y);
 	[Signal] public delegate void ScanTriggeredEventHandler(int x, int y, int depth);
+	[Signal] public delegate void MapAdvancedEventHandler();
 
 	private TileType[,,] _layerTypes = new TileType[0, 0, 0];
 	private int[,,] _layerHp = new int[0, 0, 0];
@@ -34,6 +35,7 @@ public partial class Grid : Node2D
 	private List<Fragment> _fragments = new();
 	private List<Fragment> _collectedFragments = new();
 	private Random _rng = new();
+	private IReadOnlyList<MapConfig>? _maps;
 
 	// Reused per _Draw call to avoid per-tile allocation.
 	private readonly Vector2[] _hexVerts = new Vector2[6];
@@ -108,26 +110,37 @@ public partial class Grid : Node2D
 
 	private MapConfig? LoadMapConfig()
 	{
-		using var mapsFile = Godot.FileAccess.Open(MapsConfigPath, Godot.FileAccess.ModeFlags.Read);
-		if (mapsFile == null)
+		if (_maps == null)
 		{
-			GD.PrintErr($"[Grid] maps config not found: {MapsConfigPath}");
-			return null;
+			using var mapsFile = Godot.FileAccess.Open(MapsConfigPath, Godot.FileAccess.ModeFlags.Read);
+			if (mapsFile == null)
+			{
+				GD.PrintErr($"[Grid] maps config not found: {MapsConfigPath}");
+				return null;
+			}
+			var mapsBytes = mapsFile.GetBuffer((long)mapsFile.GetLength());
+			mapsFile.Close();
+
+			using var mapsStream = new MemoryStream(mapsBytes);
+			_maps = new MapsConfigReader().Read(mapsStream);
 		}
-		var mapsBytes = mapsFile.GetBuffer((long)mapsFile.GetLength());
-		mapsFile.Close();
 
-		using var mapsStream = new MemoryStream(mapsBytes);
-		var maps = new MapsConfigReader().Read(mapsStream);
-
-		if (maps.Count == 0)
+		if (_maps.Count == 0)
 		{
 			GD.PrintErr("[Grid] maps config is empty");
 			return null;
 		}
 
-		int idx = Math.Clamp(MapIndex, 0, maps.Count - 1);
-		return maps[idx];
+		int idx = Math.Clamp(MapIndex, 0, _maps.Count - 1);
+		return _maps[idx];
+	}
+
+	private void AdvanceToNextMap()
+	{
+		if (_maps == null || MapIndex + 1 >= _maps.Count) return;
+		MapIndex++;
+		Generate();
+		EmitSignal(SignalName.MapAdvanced);
 	}
 
 	private IReadOnlyList<ItemConfig>? LoadItems()
@@ -331,6 +344,8 @@ public partial class Grid : Node2D
 		FragmentsCollected++;
 		EmitSignal(SignalName.FragmentsChanged, FragmentsCollected);
 		QueueRedraw();
+		if (_fragments.Count == 0)
+			CallDeferred(MethodName.AdvanceToNextMap);
 		return true;
 	}
 
