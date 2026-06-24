@@ -33,18 +33,16 @@ See CONFIG.md for general specifications. Item config format is defined in [ITEM
 
 Collections are stored in order:
 
-1. Id: int
+1. Id: ushort
 2. Name: string
-3. State: byte
-4. Difficulty: byte
-5. Shelf count
+3. Difficulty: byte
+4. Shelf count
 
 SHELVES belonging to that COLLECTION are then placed one by one:
 
 1. Item count: byte
 2...N Item: int 
 
-### Future considerations
+Partial items are only marked with their main item id. The program needs to show the partial items in the collection until they are all collected. See MUSEUM.md for UI details
 
-As the descriptions may contain repeated words, it might make sense to store those as lists of ushorts. So we would have string lists, then lists of string pointers, and ultimately pointers to either directly to string lists, or to lists of string pointers
 
