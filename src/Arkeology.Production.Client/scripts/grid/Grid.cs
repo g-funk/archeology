@@ -19,6 +19,8 @@ public partial class Grid : Node2D
 	[Export] public int LayerCount { get; set; } = 4;
 	[Export] public int MaxCollapse { get; set; } = 2;
 	[Export] public float CollapseChance { get; set; } = 0.15f;
+	[Export] public int MinScrapTiles { get; set; } = 4;
+	[Export] public int MaxScrapTiles { get; set; } = 12;
 
 	[Signal] public delegate void FragmentsChangedEventHandler(int count);
 	[Signal] public delegate void DugEventHandler(int x, int y, int depth);
@@ -102,7 +104,10 @@ public partial class Grid : Node2D
 		}
 
 		if (map != null)
+		{
 			PlaceConfigShapes(map);
+			SpawnScraps(map.ScrapCount);
+		}
 
 		EmitSignal(SignalName.FragmentsChanged, FragmentsCollected);
 		QueueRedraw();
@@ -193,6 +198,82 @@ public partial class Grid : Node2D
 			foreach (var c in cells)
 				_fragmentAt[c.X, c.Y, shape.Layer] = frag;
 		}
+	}
+
+	private void SpawnScraps(int count)
+	{
+		if (count <= 0 || LayerCount <= 1) return;
+
+		const int maxAttempts = 500;
+		int attempts = 0;
+		int spawned = 0;
+		while (spawned < count && attempts < maxAttempts)
+		{
+			attempts++;
+			int tileCount = MinScrapTiles + _rng.Next(Math.Max(1, MaxScrapTiles - MinScrapTiles + 1));
+			var relCells = GenerateRandomShape(tileCount, _rng);
+
+			int shapeW = 1, shapeH = 1;
+			foreach (var c in relCells)
+			{
+				if (c.X + 1 > shapeW) shapeW = c.X + 1;
+				if (c.Y + 1 > shapeH) shapeH = c.Y + 1;
+			}
+			if (shapeW > Width || shapeH > Height) continue;
+
+			int ax = _rng.Next(Width - shapeW + 1);
+			int ay = _rng.Next(Height - shapeH + 1);
+			int depth = 1 + _rng.Next(LayerCount - 1);
+
+			var cells = new Vector2I[relCells.Length];
+			bool fits = true;
+			for (int i = 0; i < relCells.Length; i++)
+			{
+				int cx = ax + relCells[i].X;
+				int cy = ay + relCells[i].Y;
+				if (!InBounds(cx, cy) || _fragmentAt[cx, cy, depth] != null) { fits = false; break; }
+				cells[i] = new Vector2I(cx, cy);
+			}
+			if (!fits) continue;
+
+			var frag = new Fragment(_fragments.Count, FragmentShape.SquareTwo, depth, cells);
+			_fragments.Add(frag);
+			foreach (var c in cells)
+				_fragmentAt[c.X, c.Y, depth] = frag;
+			spawned++;
+		}
+	}
+
+	private static Vector2I[] GenerateRandomShape(int tileCount, Random rng)
+	{
+		var cells = new HashSet<Vector2I>();
+		var perimeter = new List<Vector2I>();
+		cells.Add(Vector2I.Zero);
+		AddHexPerimeter(Vector2I.Zero, cells, perimeter);
+
+		while (cells.Count < tileCount && perimeter.Count > 0)
+		{
+			int idx = rng.Next(perimeter.Count);
+			var next = perimeter[idx];
+			perimeter.RemoveAt(idx);
+			if (!cells.Add(next)) continue;
+			AddHexPerimeter(next, cells, perimeter);
+		}
+
+		int minX = int.MaxValue, minY = int.MaxValue;
+		foreach (var c in cells) { if (c.X < minX) minX = c.X; if (c.Y < minY) minY = c.Y; }
+		var result = new Vector2I[cells.Count];
+		int i2 = 0;
+		foreach (var c in cells) result[i2++] = new Vector2I(c.X - minX, c.Y - minY);
+		return result;
+	}
+
+	private static void AddHexPerimeter(Vector2I cell, HashSet<Vector2I> cells, List<Vector2I> perimeter)
+	{
+		Span<Vector2I> neighbors = stackalloc Vector2I[6];
+		HexMetrics.GetNeighbors(cell.X, cell.Y, neighbors);
+		foreach (var n in neighbors)
+			if (!cells.Contains(n)) perimeter.Add(n);
 	}
 
 	private static int HpForType(TileType type) => type switch
