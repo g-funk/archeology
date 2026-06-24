@@ -48,7 +48,7 @@ If no output file is given, a hex dump is printed to stdout. Show the hex dump a
 ```
 
 All multi-byte integers are little-endian.
-Predefined tokens are loaded from `config/json/predefined_tokens.json`. See CONFIG_STRINGS.md.
+Predefined tokens are loaded from `data/json/predefined_tokens.json`. See CONFIG_STRINGS.md.
 
 # Source format
 

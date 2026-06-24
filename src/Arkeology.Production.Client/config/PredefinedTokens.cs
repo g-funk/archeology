@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace Arkeology.Production.Client;
 
-// Loads predefined tokens from config/json/predefined_tokens.json.
+// Loads predefined tokens from data/json/predefined_tokens.json.
 // The JSON is the canonical source of truth shared with the Python encoders.
 // Call StringTable.Configure(jsonPath) at startup; otherwise StringTable falls
 // back to LoadDefault() which mirrors the JSON and must be kept in sync.
@@ -28,7 +28,7 @@ public static class PredefinedTokens
         return Build(file.NoSpace, file.Normal);
     }
 
-    // Embedded defaults — must exactly mirror config/json/predefined_tokens.json.
+    // Embedded defaults — must exactly mirror data/json/predefined_tokens.json.
     // Update both together whenever the predefined set changes (version bump required).
     public static (Dictionary<ushort, string> ById, Dictionary<string, ushort> ByValue)
         LoadDefault()

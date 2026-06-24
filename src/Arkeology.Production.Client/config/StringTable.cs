@@ -17,7 +17,7 @@ public class StringTable
         (_predefinedById, _predefinedByValue) = PredefinedTokens.LoadDefault();
     }
 
-    // Load predefined tokens from config/json/predefined_tokens.json.
+    // Load predefined tokens from data/json/predefined_tokens.json.
     // Call once at game startup before any config files are read.
     public static void Configure(string jsonPath)
     {
