@@ -1,7 +1,8 @@
 # Items
 
-Shapes use stagger-aware ASCII: `X`=occupied, `.`=empty, space-separated cells.
-Odd rows (row 1, 3, 5 ...) are indented by 1 leading space to show the hex stagger.
+Shapes use stagger-aware ASCII: `X`=occupied, `.`=empty.
+Spaces are ignored entirely — use as many (or as few) as you like for visual clarity.
+Odd rows (row 1, 3, 5 ...) are conventionally indented to show the hex stagger.
 r means rarity; p means parts of a partial item.
 
 
@@ -17,22 +18,21 @@ X X X X .
 id=1001
 r=common
 name=The Drop Statue
-description=Mystical status that is able to balance on the narrow single foot
-X X X X .
+description=Mystical statue that is able to balance on the narrow single foot
+. X X X X
  X X . X X
-X . . X .
- . X X X X
-. X X X .
- . . X X .
-. . X . .
+. X . . X
+ . X X X .
+. . X X .
+. .  X . .
 ---
 id=1002
 r=common
 name=The Plus
 description=A plus sign. Or maybe a cross?
-. X .
- X X X
-. X .
+. . X .
+ X X X X
+. . X .
 ---
 id=1010
 r=uncommon
@@ -58,5 +58,5 @@ id=1013
 name=Unknown
 description=Hmm... can't recognise what this is
 X X X X
- . . X .
+ . X . .
 . . X .

@@ -68,7 +68,7 @@ p=1011,1012,1013
 
 - Items are delimited by `---`
 - `r` is rarity; defaults to `common` if missing
-- Shape rows use `X`=occupied, `.`=empty, space-separated; odd rows (1, 3, 5 ...) are indented by 1 leading space to show the hex stagger
-- Cell at column `cx`, row `ry` maps to cube offset `dq = cx - ry // 2`, `dr = ry`
+- Shape rows use `X`=occupied, `.`=empty; spaces are ignored entirely (use freely for visual clarity); odd rows (1, 3, 5 ...) are conventionally indented to show the hex stagger
+- Cell at column `cx` (count of X/. chars seen so far on the row), row `ry` maps to cube offset `dq = cx - ry // 2`, `dr = ry`
 - `p` is a comma-separated list of part item IDs (mutually exclusive with shape rows)
 - Items with parts have cell_count=0 and no cell bytes

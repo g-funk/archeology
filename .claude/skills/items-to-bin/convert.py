@@ -61,17 +61,20 @@ def is_shape_row(line):
 def parse_shape_cells(rows):
     """Convert stagger-aware ASCII rows to list of (dq, dr) cube offsets.
 
-    Odd source rows are indented 1 space (visual stagger only — parsing uses
-    the column index cx and the formula dq = cx - ry // 2, dr = ry).
+    Spaces are purely decorative and ignored entirely — each X or . character
+    is counted sequentially as column cx regardless of surrounding whitespace.
+    Formula: dq = cx - ry // 2, dr = ry.
     """
     cells = []
     for ry, raw_line in enumerate(rows):
-        tokens = raw_line.split()
-        for cx, token in enumerate(tokens):
-            if token == 'X':
-                dq = cx - ry // 2
-                dr = ry
-                cells.append((dq, dr))
+        cx = 0
+        for ch in raw_line:
+            if ch == 'X':
+                cells.append((cx - ry // 2, ry))
+                cx += 1
+            elif ch == '.':
+                cx += 1
+            # spaces are skipped
     return cells
 
 
