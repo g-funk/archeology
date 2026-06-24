@@ -18,7 +18,7 @@ import time
 
 def _default_tokens_path():
     lib_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.normpath(os.path.join(lib_dir, '..', '..', '..', 'config', 'json', 'predefined_tokens.json'))
+    return os.path.normpath(os.path.join(lib_dir, '..', '..', '..', 'src', 'Arkeology.Production.Client', 'config', 'json', 'predefined_tokens.json'))
 
 
 def load_predefined(json_path=None):
