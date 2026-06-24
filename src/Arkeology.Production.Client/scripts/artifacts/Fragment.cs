@@ -15,6 +15,7 @@ public enum FragmentShape
 public class Fragment
 {
 	public int Id { get; }
+	public bool IsScrap { get; }
 	// Legacy: only meaningful when a predefined Template was used. With random
 	// generation this is left at a default and not consulted for rendering.
 	public FragmentShape Shape { get; }
@@ -23,9 +24,10 @@ public class Fragment
 	public int Depth { get; }
 	public IReadOnlyList<Vector2I> Cells { get; }
 
-	public Fragment(int id, FragmentShape shape, int depth, IReadOnlyList<Vector2I> cells)
+	public Fragment(int id, FragmentShape shape, int depth, IReadOnlyList<Vector2I> cells, bool isScrap = false)
 	{
 		Id = id;
+		IsScrap = isScrap;
 		Shape = shape;
 		Depth = depth;
 		Cells = cells;

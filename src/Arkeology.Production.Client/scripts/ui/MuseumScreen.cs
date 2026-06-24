@@ -13,6 +13,7 @@ public partial class MuseumScreen : Control
     [Export] public string CollectionsConfigPath { get; set; } = "res://data/bin/collections.bin";
     [Export] public string ItemsConfigPath       { get; set; } = "res://data/bin/items.bin";
     [Export] public string PredefinedTokensPath  { get; set; } = "res://data/json/predefined_tokens.json";
+    [Export] public NodePath GridPath            { get; set; } = new("../../../../World/Grid");
 
     private static readonly Color BgColor      = new(0.10f, 0.08f, 0.07f);
     private static readonly Color HeaderText   = new(0.92f, 0.84f, 0.62f);
@@ -33,8 +34,15 @@ public partial class MuseumScreen : Control
     public override void _Ready()
     {
         LoadData();
-        _manager.ItemDiscovered    += _ => CallDeferred(MethodName.RefreshList);
+        _manager.ItemDiscovered     += _ => CallDeferred(MethodName.RefreshList);
         _manager.CollectionUnlocked += id => { _pendingUnlock.Add(id); _expanded.Add(id); };
+
+        var grid = GetNodeOrNull<Grid>(GridPath);
+        if (grid != null)
+            grid.FragmentCollected += itemId => _manager.DiscoverItem(itemId);
+        else
+            GD.PushWarning($"[Museum] Grid not found at '{GridPath}' — fragment discovery disabled.");
+
         BuildUi();
     }
 

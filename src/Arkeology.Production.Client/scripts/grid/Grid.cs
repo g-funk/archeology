@@ -23,6 +23,7 @@ public partial class Grid : Node2D
 	[Export] public int MaxScrapTiles { get; set; } = 12;
 
 	[Signal] public delegate void FragmentsChangedEventHandler(int count);
+	[Signal] public delegate void FragmentCollectedEventHandler(int itemId);
 	[Signal] public delegate void DugEventHandler(int x, int y, int depth);
 	[Signal] public delegate void DigBlockedEventHandler(int x, int y);
 	[Signal] public delegate void ClickedEventHandler(int x, int y);
@@ -236,7 +237,7 @@ public partial class Grid : Node2D
 			}
 			if (!fits) continue;
 
-			var frag = new Fragment(_fragments.Count, FragmentShape.SquareTwo, depth, cells);
+			var frag = new Fragment(_fragments.Count, FragmentShape.SquareTwo, depth, cells, isScrap: true);
 			_fragments.Add(frag);
 			foreach (var c in cells)
 				_fragmentAt[c.X, c.Y, depth] = frag;
@@ -424,6 +425,8 @@ public partial class Grid : Node2D
 		_collectedFragments.Add(frag);
 		FragmentsCollected++;
 		EmitSignal(SignalName.FragmentsChanged, FragmentsCollected);
+		if (!frag.IsScrap)
+			EmitSignal(SignalName.FragmentCollected, frag.Id);
 		QueueRedraw();
 		if (_fragments.Count == 0)
 			CallDeferred(MethodName.AdvanceToNextMap);
