@@ -134,13 +134,15 @@ public partial class MuseumScreen : Control
             .ToList();
 
         if (unlocked.Count == 0)
-        {
             AddEmptyState();
-            return;
-        }
+        else
+            foreach (var collection in unlocked)
+                AddCollectionEntry(collection);
 
-        foreach (var collection in unlocked)
-            AddCollectionEntry(collection);
+        var nextLocked = _manager.Collections
+            .FirstOrDefault(c => c.State == CollectionState.Locked);
+        if (nextLocked != null)
+            AddLockedPlaceholder(nextLocked);
     }
 
     private void AddEmptyState()
@@ -160,6 +162,38 @@ public partial class MuseumScreen : Control
         label.AddThemeColorOverride("font_color", DimText);
         label.AddThemeFontSizeOverride("font_size", 18);
         margin.AddChild(label);
+    }
+
+    private void AddLockedPlaceholder(Collection collection)
+    {
+        var entryStyle = new StyleBoxFlat
+        {
+            BgColor        = new Color(0.12f, 0.10f, 0.08f),
+            BorderColor    = new Color(0.20f, 0.16f, 0.11f),
+            BorderWidthTop = 1, BorderWidthBottom = 1,
+            BorderWidthLeft = 1, BorderWidthRight  = 1,
+        };
+        var entry = new PanelContainer();
+        entry.AddThemeStyleboxOverride("panel", entryStyle);
+        _list!.AddChild(entry);
+
+        var label = new Label
+        {
+            Text = $"  ?  {ScrambleName(collection.Name)}",
+            CustomMinimumSize = new Vector2(0, 56),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        label.AddThemeColorOverride("font_color", new Color(0.38f, 0.32f, 0.24f));
+        label.AddThemeFontSizeOverride("font_size", 20);
+        entry.AddChild(label);
+    }
+
+    private static string ScrambleName(string name)
+    {
+        var chars = new System.Text.StringBuilder(name.Length);
+        foreach (char c in name)
+            chars.Append(c == ' ' ? ' ' : '?');
+        return chars.ToString();
     }
 
     private void AddCollectionEntry(Collection collection)
