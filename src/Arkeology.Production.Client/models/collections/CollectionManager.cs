@@ -63,6 +63,12 @@ public class CollectionManager
             foreach (var parent in parents.Where(p => p.IsDiscovered))
                 ItemDiscovered?.Invoke(parent.Config.Id);
         }
+
+        foreach (var c in _collections.Where(c => c.State == CollectionState.Locked && !c.IsLocked))
+        {
+            c.State = CollectionState.Unlocked;
+            CollectionUnlocked?.Invoke(c.Id);
+        }
     }
 
     private void IndexItem(Item item)

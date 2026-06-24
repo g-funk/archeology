@@ -12,6 +12,7 @@
 [ext_resource type="Script" uid="uid://dgm0t4jpbmens" path="res://scripts/ui/CollectionStrip.cs" id="10_collection"]
 [ext_resource type="Script" uid="uid://c03eb8eaxp8mw" path="res://scripts/ui/TabButton.cs" id="12_bjd11"]
 [ext_resource type="Script" uid="uid://cux34ptrge6ob" path="res://scripts/ui/RelaxationScreen.cs" id="12_relax"]
+[ext_resource type="Script" uid="uid://bm3xq7k9pn5d2" path="res://scripts/ui/MuseumScreen.cs" id="13_museum"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_wp0k4"]
 
@@ -122,41 +123,11 @@ layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
 
-[node name="Museum" type="ColorRect" parent="HUD/ParentScreen/TabContainer" unique_id=1810047343]
+[node name="Museum" type="Control" parent="HUD/ParentScreen/TabContainer" unique_id=1810047343]
 visible = false
 layout_mode = 2
-color = Color(0.1, 0.08, 0.07, 1)
+script = ExtResource("13_museum")
 metadata/_tab_index = 1
-
-[node name="Title" type="Label" parent="HUD/ParentScreen/TabContainer/Museum" unique_id=1215638035]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -200.0
-offset_top = 80.0
-offset_right = 200.0
-offset_bottom = 130.0
-grow_horizontal = 2
-theme_override_colors/font_color = Color(0.92, 0.84, 0.62, 1)
-theme_override_font_sizes/font_size = 28
-text = "Museum"
-horizontal_alignment = 1
-
-[node name="Subtitle" type="Label" parent="HUD/ParentScreen/TabContainer/Museum" unique_id=859518454]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -200.0
-offset_top = 130.0
-offset_right = 200.0
-offset_bottom = 170.0
-grow_horizontal = 2
-theme_override_colors/font_color = Color(0.78, 0.72, 0.58, 1)
-theme_override_font_sizes/font_size = 16
-text = "Coming soon"
-horizontal_alignment = 1
 
 [node name="Relax" type="ColorRect" parent="HUD/ParentScreen/TabContainer" unique_id=2059162651]
 visible = false

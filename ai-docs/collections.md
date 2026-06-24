@@ -87,5 +87,5 @@ Source: `test-data/collections-data-source.md` (and future production data file)
 
 ## Cross-feature seams
 
-- **Museum UI** (not yet implemented): subscribes to `ItemDiscovered` and `CollectionUnlocked` to update display.
+- **Museum UI** (`scripts/ui/MuseumScreen.cs`, `scripts/ui/ShelfRow.cs`): owns a `CollectionManager`, loads both binaries on `_Ready`, subscribes to `ItemDiscovered` and `CollectionUnlocked`. See [ai-docs/museum.md](museum.md).
 - **Fragment collection** (not yet wired): when a Fragment is collected, the excavation system will call `CollectionManager.DiscoverItem` with the corresponding item id.

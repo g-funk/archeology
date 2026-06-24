@@ -49,6 +49,7 @@ One doc per implemented feature describing current code: file paths, data model,
 - [ai-docs/character.md](ai-docs/character.md) — archaeologist figure, tap/double-tap movement, autodig
 - [ai-docs/stamina.md](ai-docs/stamina.md) — stamina drain, passive recharge, slowdown, HUD bar
 - [ai-docs/collections.md](ai-docs/collections.md) — ItemConfig/Item split, Collection/Shelf model, CollectionManager, discovery events
+- [ai-docs/museum.md](ai-docs/museum.md) — MuseumScreen, ShelfRow, collection list UI, expand/collapse, pending unlock
 
 When adding a new feature, create `ai-docs/<feature>.md` and link it from this list and from any sibling docs that share code.
 
