@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert items source data (.md) to binary format (design/features/ITEMS.md + CONFIG.md).
+"""Convert items source data (.md) to binary format.
 
 File layout:
   [header]
@@ -25,12 +25,20 @@ File layout:
       uint16  parts_ids[parts_count]
       uint16  name_ptr       (token ID if <20000, else token list index + 20000)
       uint16  desc_ptr
-      uint8   shape_w
-      uint8   shape_h
-      bytes   shape_bitmap   (ceil(w*h/8) bytes, MSB first; omitted when w*h==0)
+      uint8   cell_count
+      for each cell (omitted when cell_count==0):
+        int8    dq            (cube-coordinate column offset, signed)
+        int8    dr            (cube-coordinate row offset, signed)
 
 String pointers: value < 20000 is a single token ID; >= 20000 means (value - 20000) is
 an index into the token list table.  See CONFIG_STRINGS.md.
+
+Shape format: cube offsets (dq, dr) relative to the item's anchor cell.
+Convert to odd-r offset grid: col = dq + (dr - (dr & 1)) / 2, row = dr.
+Convert back to cube from anchor (anchorCol, anchorRow):
+  q0 = anchorCol - (anchorRow - (anchorRow & 1)) / 2
+  gx = (q0 + dq) + (tr - (tr & 1)) / 2   where tr = anchorRow + dr
+  gy = anchorRow + dr
 """
 import argparse
 import os
@@ -41,22 +49,30 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from lib.tokens import load_predefined, Tokenizer, encode_header
 
 RARITIES = {'common': 0, 'uncommon': 1, 'rare': 2, 'epic': 3, 'legendary': 4}
-VERSION  = (1, 0)
+VERSION  = (1, 1)
 
 
 def is_shape_row(line):
+    """A shape row contains only X, . and spaces with at least one X or dot."""
     s = line.strip()
-    return bool(s) and all(c in '01' for c in s)
+    return bool(s) and all(c in 'X. ' for c in s) and ('X' in s or '.' in s)
 
 
-def shape_to_bitmap(shape_data):
-    bits    = [int(c) for c in shape_data]
-    n_bytes = (len(bits) + 7) // 8
-    result  = bytearray(n_bytes)
-    for i, b in enumerate(bits):
-        if b:
-            result[i // 8] |= 0x80 >> (i % 8)
-    return bytes(result)
+def parse_shape_cells(rows):
+    """Convert stagger-aware ASCII rows to list of (dq, dr) cube offsets.
+
+    Odd source rows are indented 1 space (visual stagger only — parsing uses
+    the column index cx and the formula dq = cx - ry // 2, dr = ry).
+    """
+    cells = []
+    for ry, raw_line in enumerate(rows):
+        tokens = raw_line.split()
+        for cx, token in enumerate(tokens):
+            if token == 'X':
+                dq = cx - ry // 2
+                dr = ry
+                cells.append((dq, dr))
+    return cells
 
 
 def parse_items(text):
@@ -77,7 +93,7 @@ def parse_items(text):
 
             if is_shape_row(line):
                 in_shape = True
-                shape_rows.append(stripped)
+                shape_rows.append(line)
             elif '=' in line and not in_shape:
                 key, _, value = line.partition('=')
                 key = key.strip(); value = value.strip()
@@ -89,11 +105,7 @@ def parse_items(text):
                     item['parts'] = [int(x.strip()) for x in value.split(',') if x.strip()]
 
         if shape_rows:
-            h = len(shape_rows)
-            w = max(len(r) for r in shape_rows)
-            item['shape_w']    = w
-            item['shape_h']    = h
-            item['shape_data'] = ''.join(r.ljust(w, '0') for r in shape_rows)
+            item['cells'] = parse_shape_cells(shape_rows)
 
         if 'id' not in item:
             continue
@@ -102,9 +114,7 @@ def parse_items(text):
         item.setdefault('name',        '')
         item.setdefault('description', '')
         item.setdefault('parts',       [])
-        item.setdefault('shape_w',     0)
-        item.setdefault('shape_h',     0)
-        item.setdefault('shape_data',  '')
+        item.setdefault('cells',       [])
         items.append(item)
 
     return items
@@ -132,11 +142,11 @@ def encode(items, tokenizer):
         buf += struct.pack('<H', item['name_ptr'])
         buf += struct.pack('<H', item['desc_ptr'])
 
-        w, h = item['shape_w'], item['shape_h']
-        buf += struct.pack('<B', w)
-        buf += struct.pack('<B', h)
-        if w * h > 0:
-            buf += shape_to_bitmap(item['shape_data'])
+        cells = item['cells']
+        buf += struct.pack('<B', len(cells))
+        for dq, dr in cells:
+            buf += struct.pack('<b', dq)
+            buf += struct.pack('<b', dr)
 
     return bytes(buf)
 
@@ -181,7 +191,7 @@ def main():
         file=sys.stderr,
     )
     for item in items:
-        shape = f"{item['shape_w']}x{item['shape_h']}" if not item['parts'] else f"parts={item['parts']}"
+        shape = f"cells={len(item['cells'])}" if not item['parts'] else f"parts={item['parts']}"
         print(
             f"  id={item['id']} r={item['rarity']} '{item['name']}' {shape} "
             f"name_ptr={item['name_ptr']} desc_ptr={item['desc_ptr']}",

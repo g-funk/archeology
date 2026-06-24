@@ -23,7 +23,7 @@ Collection (Id, Name, State, Difficulty)
 
 **CollectionConfig** / **ShelfConfig**: immutable records deserialized from `data/bin/collections.bin`. `CollectionConfig` holds Id, Name, Difficulty, and `IReadOnlyList<ShelfConfig>`. Each `ShelfConfig` holds `IReadOnlyList<int>` item IDs (int32 in the binary).
 
-**ItemConfig**: immutable, deserialized from `data/bin/items.bin`. Holds all static properties: `Id`, `Name`, `Description`, `Rarity`, `Parts` (`IReadOnlyList<int>?` — part IDs only), and `IsPartial`. `Rarity` enum lives here.
+**ItemConfig**: immutable, deserialized from `data/bin/items.bin`. Holds all static properties: `Id`, `Name`, `Description`, `Rarity`, `Parts` (`IReadOnlyList<int>?` — part IDs only), `IsPartial`, and `CubeOffsets` (`IReadOnlyList<(int Dq, int Dr)>` — cube-coordinate cell offsets relative to the anchor, empty for partial items). `Rarity` enum lives here. `HasShape` is true when `CubeOffsets.Count > 0`.
 
 **Item**: runtime instance wrapping an `ItemConfig`. Holds only mutable state: `_discovered` flag, `Parts` (`IReadOnlyList<Item>?` — runtime instances for discovery tracking), and `IsDiscovered`/`MarkDiscovered`. `IsPartial` delegates to `Config.IsPartial`. `MarkDiscovered()` only needs to be called on simple items and parts.
 

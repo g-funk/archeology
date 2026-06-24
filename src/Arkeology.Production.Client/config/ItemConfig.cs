@@ -12,29 +12,23 @@ public class ItemConfig
     public string Description { get; }
     public Rarity Rarity { get; }
     public IReadOnlyList<int>? Parts { get; }
-    public int ShapeWidth { get; }
-    public int ShapeHeight { get; }
-    private readonly bool[] _shapeCells;
+    // Cube-coordinate offsets (dq, dr) relative to the item's anchor cell.
+    // Empty for partial items (those with Parts). Convert to odd-r offset grid:
+    //   col = dq + (dr - (dr & 1)) / 2,  row = dr
+    public IReadOnlyList<(int Dq, int Dr)> CubeOffsets { get; }
 
     public bool IsPartial => Parts is { Count: > 0 };
+    public bool HasShape  => CubeOffsets.Count > 0;
 
     public ItemConfig(int id, string name, string description, Rarity rarity,
-        IReadOnlyList<int>? parts = null, int shapeWidth = 0, int shapeHeight = 0, bool[]? shapeCells = null)
+        IReadOnlyList<int>? parts = null,
+        IReadOnlyList<(int Dq, int Dr)>? cubeOffsets = null)
     {
-        Id = id;
-        Name = name;
+        Id          = id;
+        Name        = name;
         Description = description;
-        Rarity = rarity;
-        Parts = parts;
-        ShapeWidth = shapeWidth;
-        ShapeHeight = shapeHeight;
-        _shapeCells = shapeCells ?? Array.Empty<bool>();
-    }
-
-    public bool IsShapeOccupied(int x, int y)
-    {
-        if (x < 0 || x >= ShapeWidth || y < 0 || y >= ShapeHeight) return false;
-        int idx = y * ShapeWidth + x;
-        return idx < _shapeCells.Length && _shapeCells[idx];
+        Rarity      = rarity;
+        Parts       = parts;
+        CubeOffsets = cubeOffsets ?? Array.Empty<(int, int)>();
     }
 }

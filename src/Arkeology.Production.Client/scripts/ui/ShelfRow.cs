@@ -87,22 +87,42 @@ public partial class ShelfRow : Control
 
     private void DrawShape(Vector2 origin, ItemConfig cfg)
     {
-        if (cfg.ShapeWidth <= 0 || cfg.ShapeHeight <= 0) return;
+        var offsets = cfg.CubeOffsets;
+        if (offsets.Count == 0) return;
+
+        // Convert cube offsets to odd-r offset grid coords and find bounds.
+        int minCol = int.MaxValue, maxCol = int.MinValue;
+        int minRow = int.MaxValue, maxRow = int.MinValue;
+        foreach (var (dq, dr) in offsets)
+        {
+            int col = dq + (dr - (dr & 1)) / 2;
+            int row = dr;
+            if (col < minCol) minCol = col;
+            if (col > maxCol) maxCol = col;
+            if (row < minRow) minRow = row;
+            if (row > maxRow) maxRow = row;
+        }
+
+        int numCols = maxCol - minCol + 1;
+        int numRows = maxRow - minRow + 1;
 
         float avail = SlotSize - 2f * CellInset;
-        float cell  = Mathf.Min(avail / cfg.ShapeWidth, avail / cfg.ShapeHeight);
-        float ox = origin.X + CellInset + (avail - cell * cfg.ShapeWidth)  * 0.5f;
-        float oy = origin.Y + CellInset + (avail - cell * cfg.ShapeHeight) * 0.5f;
+        // Extra 0.5 column for odd-row stagger.
+        float cell = Mathf.Min(avail / (numCols + 0.5f), avail / numRows);
 
-        for (int r = 0; r < cfg.ShapeHeight; r++)
-            for (int c = 0; c < cfg.ShapeWidth; c++)
-            {
-                if (!cfg.IsShapeOccupied(c, r)) continue;
-                DrawRect(new Rect2(
-                    new Vector2(ox + c * cell, oy + r * cell),
-                    new Vector2(cell - 1f, cell - 1f)),
-                    Gold);
-            }
+        float totalW = numCols * cell + cell * 0.5f;
+        float totalH = numRows * cell;
+        float ox = origin.X + CellInset + (avail - totalW) * 0.5f;
+        float oy = origin.Y + CellInset + (avail - totalH) * 0.5f;
+
+        foreach (var (dq, dr) in offsets)
+        {
+            int col = dq + (dr - (dr & 1)) / 2 - minCol;
+            int row = dr - minRow;
+            float cx = ox + col * cell + (row % 2 == 1 ? cell * 0.5f : 0f);
+            float cy = oy + row * cell;
+            DrawRect(new Rect2(cx, cy, cell - 1f, cell - 1f), Gold);
+        }
     }
 
     private void DrawPlaceholder(Vector2 origin)

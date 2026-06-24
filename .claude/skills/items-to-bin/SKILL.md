@@ -35,13 +35,15 @@ If no output file is given, a hex dump is printed to stdout. Show the hex dump a
     uint16  parts_ids[parts_count]
     uint16  name_ptr         ← token ID (<20000) or token list index + 20000
     uint16  desc_ptr
-    uint8   shape_w
-    uint8   shape_h
-    bytes   shape_bitmap     ← ceil(w*h/8) bytes, MSB first; omitted when w*h==0
+    uint8   cell_count
+    for each cell (omitted when cell_count==0):
+      int8    dq             ← cube-coordinate column offset (signed)
+      int8    dr             ← cube-coordinate row offset (signed)
 ```
 
 All multi-byte integers are little-endian.
-Shape bitmap: MSB first — first cell maps to bit 7 of byte 0, reading left-to-right top-to-bottom.
+Shape cells are cube offsets (dq, dr) relative to the item's anchor cell.
+Convert to odd-r offset grid: `col = dq + (dr - (dr & 1)) / 2`, `row = dr`.
 Predefined tokens are loaded from `data/json/predefined_tokens.json`. See CONFIG_STRINGS.md.
 
 # Source format
@@ -52,9 +54,9 @@ id=1000
 r=common
 name=Tile
 description=Tile used for decorating walls and floors
-01111
-11111
-11110
+. X X X X
+ X X X X .
+X X X X .
 ---
 id=1010
 r=uncommon
@@ -66,6 +68,7 @@ p=1011,1012,1013
 
 - Items are delimited by `---`
 - `r` is rarity; defaults to `common` if missing
-- Shape rows are consecutive 0/1 lines (trailing spaces ignored)
+- Shape rows use `X`=occupied, `.`=empty, space-separated; odd rows (1, 3, 5 ...) are indented by 1 leading space to show the hex stagger
+- Cell at column `cx`, row `ry` maps to cube offset `dq = cx - ry // 2`, `dr = ry`
 - `p` is a comma-separated list of part item IDs (mutually exclusive with shape rows)
-- Items with parts have shape_w=0, shape_h=0, no bitmap bytes
+- Items with parts have cell_count=0 and no cell bytes

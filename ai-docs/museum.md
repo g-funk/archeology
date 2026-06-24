@@ -54,7 +54,7 @@ Custom-draw `Control`. Exposed API: `SetItems(IReadOnlyList<Item>)` — updates 
 
 ### Shape rendering
 
-Uses `ItemConfig.IsShapeOccupied(c, r)` to draw a grid of gold cells scaled to fit within the slot's available area (`SlotSize - 2 * CellInset`).
+Uses `ItemConfig.CubeOffsets` (cube-coordinate cell list). Each `(dq, dr)` is converted to odd-r offset grid: `col = dq + (dr - (dr & 1)) / 2`, `row = dr`. Bounds are computed, then cells are drawn as gold squares scaled to fit within the slot's available area (`SlotSize - 2 * CellInset`). Odd rows are shifted right by `cell * 0.5` to show the hex stagger.
 
 ## CollectionManager unlock detection
 

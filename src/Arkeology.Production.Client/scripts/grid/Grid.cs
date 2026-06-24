@@ -177,19 +177,21 @@ public partial class Grid : Node2D
 		{
 			if (!itemById.TryGetValue(shape.ItemId, out var itemCfg)) continue;
 			if (shape.Layer < 0 || shape.Layer >= LayerCount) continue;
+			if (!itemCfg.HasShape) continue;
+
+			// Convert anchor from odd-r offset coords to cube coords.
+			int q0 = shape.X - (shape.Y - (shape.Y & 1)) / 2;
+			int r0 = shape.Y;
 
 			var cells = new List<Vector2I>();
-			for (int sy = 0; sy < itemCfg.ShapeHeight; sy++)
+			foreach (var (dq, dr) in itemCfg.CubeOffsets)
 			{
-				for (int sx = 0; sx < itemCfg.ShapeWidth; sx++)
-				{
-					if (!itemCfg.IsShapeOccupied(sx, sy)) continue;
-					int gx = shape.X + sx;
-					int gy = shape.Y + sy;
-					if (!InBounds(gx, gy)) continue;
-					if (_fragmentAt[gx, gy, shape.Layer] != null) continue;
-					cells.Add(new Vector2I(gx, gy));
-				}
+				int tr = r0 + dr;
+				int gx = (q0 + dq) + (tr - (tr & 1)) / 2;
+				int gy = tr;
+				if (!InBounds(gx, gy)) continue;
+				if (_fragmentAt[gx, gy, shape.Layer] != null) continue;
+				cells.Add(new Vector2I(gx, gy));
 			}
 
 			if (cells.Count == 0) continue;

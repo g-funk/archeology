@@ -22,21 +22,18 @@ public class ItemsConfigReader : ConfigReader<IReadOnlyList<ItemConfig>>
             var name = header.Strings.Resolve(reader.ReadUInt16());
             var desc = header.Strings.Resolve(reader.ReadUInt16());
 
-            var shapeW = reader.ReadByte();
-            var shapeH = reader.ReadByte();
-            bool[] cells = Array.Empty<bool>();
-            if (shapeW * shapeH > 0)
+            var cellCount = reader.ReadByte();
+            var cells = new (int Dq, int Dr)[cellCount];
+            for (int c = 0; c < cellCount; c++)
             {
-                int bitCount = shapeW * shapeH;
-                int byteCount = (bitCount + 7) / 8;
-                var bitmapBytes = reader.ReadBytes(byteCount);
-                cells = new bool[bitCount];
-                for (int b = 0; b < bitCount; b++)
-                    cells[b] = (bitmapBytes[b / 8] & (0x80 >> (b % 8))) != 0;
+                int dq = reader.ReadSByte();
+                int dr = reader.ReadSByte();
+                cells[c] = (dq, dr);
             }
 
             result.Add(new ItemConfig(id, name, desc, rarity,
-                partIds.Length > 0 ? partIds : null, shapeW, shapeH, cells));
+                partIds.Length > 0 ? partIds : null,
+                cellCount > 0 ? cells : null));
         }
 
         return result;
