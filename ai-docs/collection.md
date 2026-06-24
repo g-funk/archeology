@@ -56,6 +56,12 @@ Tracked alongside the layered terrain arrays in `Grid`:
 
 ---
 
+## Config-item placement rules
+
+`Grid.PlaceConfigShapes(map)`:
+- Enforces `shape.Layer >= 1` — layer 0 items are rejected because they would be immediately visible and collectable without digging.
+- Rejects the entire shape if any cell is out of bounds or already occupied by another fragment. A partial placement would distort the shape and allow early collection.
+
 ## Spawning
 
 `Grid.SpawnFragments(rng)` runs after the terrain is generated:
@@ -119,7 +125,7 @@ All fragment colors are passed through the same depth-darkening factor as the su
   - Header text "Fragments: N" using the theme's default font.
   - Below the header, a vertical stack of slots in `_collectedFragments` order. Each slot:
     - Dark inset background.
-    - Mini-tile rendering of the shape: each cell of `frag.RelativeCells` drawn as a small gold square. Cell size is `min(CellSize, fit-to-slot)` — large or oddly-stretched random polyominoes scale down to fit; small ones use the configured `CellSize`. Spacing collapses to 0 when cells get very small.
+    - Mini-tile rendering of the shape: each cell of `frag.RelativeCells` rendered as a small gold hex using `HexMetrics.CellCenter`. The parity (stagger direction) of the first row is derived from `frag.Cells`' minimum Y so the shape matches how it appeared in the grid — `RelativeCells` normalises to Y=0 which would otherwise flip the stagger for items placed at odd anchor rows. Pixel bounds are computed from actual hex positions before centering, so layout is correct regardless of parity.
     - Same gold as an exposed grid tile, so the panel and grid read as the same material.
 - **No interaction yet** — slots are purely visual. Click handling will be wired when interpretation lands (CLAUDE.md implementation step 7).
 

@@ -176,25 +176,30 @@ public partial class Grid : Node2D
 		foreach (var shape in map.Shapes)
 		{
 			if (!itemById.TryGetValue(shape.ItemId, out var itemCfg)) continue;
-			if (shape.Layer < 0 || shape.Layer >= LayerCount) continue;
+			// Items must be buried at depth >= 1; layer 0 would be immediately collectible.
+			if (shape.Layer < 1 || shape.Layer >= LayerCount) continue;
 			if (!itemCfg.HasShape) continue;
 
 			// Convert anchor from odd-r offset coords to cube coords.
 			int q0 = shape.X - (shape.Y - (shape.Y & 1)) / 2;
 			int r0 = shape.Y;
 
-			var cells = new List<Vector2I>();
+			var cells = new List<Vector2I>(itemCfg.CubeOffsets.Count);
+			bool fits = true;
 			foreach (var (dq, dr) in itemCfg.CubeOffsets)
 			{
 				int tr = r0 + dr;
 				int gx = (q0 + dq) + (tr - (tr & 1)) / 2;
 				int gy = tr;
-				if (!InBounds(gx, gy)) continue;
-				if (_fragmentAt[gx, gy, shape.Layer] != null) continue;
+				if (!InBounds(gx, gy) || _fragmentAt[gx, gy, shape.Layer] != null)
+				{
+					fits = false;
+					break;
+				}
 				cells.Add(new Vector2I(gx, gy));
 			}
 
-			if (cells.Count == 0) continue;
+			if (!fits || cells.Count == 0) continue;
 
 			var frag = new Fragment(shape.ItemId, FragmentShape.SquareTwo, shape.Layer, cells);
 			_fragments.Add(frag);

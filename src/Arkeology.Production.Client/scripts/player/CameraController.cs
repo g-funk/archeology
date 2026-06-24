@@ -29,6 +29,7 @@ public partial class CameraController : Camera2D
 		}
 		FitGrid();
 		GetViewport().SizeChanged += FitGrid;
+		_grid.MapAdvanced += FitGrid;
 	}
 
 	// Picks a zoom level and camera position so the entire grid fits inside the

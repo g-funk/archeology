@@ -54,6 +54,15 @@ public partial class CollectionStrip : Control
 		DrawRect(new Rect2(origin, size), SlotColor, filled: true);
 
 		var template = frag.RelativeCells;
+		if (template.Count == 0) return;
+
+		// Preserve the row parity of the original placement so the shape stagger
+		// matches how it appeared in the hex grid.
+		int minOrigY = int.MaxValue;
+		foreach (var c in frag.Cells)
+			if (c.Y < minOrigY) minOrigY = c.Y;
+		int yParity = minOrigY & 1;
+
 		int maxX = 0, maxY = 0;
 		foreach (var c in template)
 		{
@@ -73,13 +82,26 @@ public partial class CollectionStrip : Control
 		float cellR = Mathf.Min(CellSize, Mathf.Min(rByW, rByH));
 		if (cellR < 1f) cellR = 1f;
 
-		var hexPixSize = HexMetrics.GridPixelSize(wCells, hCells, cellR);
-		var shapeOrigin = origin + new Vector2(slotInset, slotInset)
-			+ (new Vector2(availW, availH) - hexPixSize) * 0.5f;
+		// Compute actual pixel bounds using parity-adjusted rows, then center.
+		float hexHalfW = cellR * 0.8660254f;
+		float minPX = float.MaxValue, maxPX = float.MinValue;
+		float minPY = float.MaxValue, maxPY = float.MinValue;
+		foreach (var c in template)
+		{
+			var pos = HexMetrics.CellCenter(c.X, c.Y + yParity, cellR);
+			if (pos.X - hexHalfW < minPX) minPX = pos.X - hexHalfW;
+			if (pos.X + hexHalfW > maxPX) maxPX = pos.X + hexHalfW;
+			if (pos.Y - cellR   < minPY) minPY = pos.Y - cellR;
+			if (pos.Y + cellR   > maxPY) maxPY = pos.Y + cellR;
+		}
+
+		var shapeOrigin = origin + new Vector2(
+			slotInset + (availW - (maxPX - minPX)) * 0.5f - minPX,
+			slotInset + (availH - (maxPY - minPY)) * 0.5f - minPY);
 
 		foreach (var c in template)
 		{
-			var center = HexMetrics.CellCenter(c.X, c.Y, cellR) + shapeOrigin;
+			var center = HexMetrics.CellCenter(c.X, c.Y + yParity, cellR) + shapeOrigin;
 			HexMetrics.HexVerticesAt(center, cellR, _hexVerts);
 			DrawColoredPolygon(_hexVerts, GoldColor);
 		}
