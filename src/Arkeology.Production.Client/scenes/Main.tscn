@@ -54,6 +54,7 @@ StaminaPath = NodePath("../../../StaminaSystem")
 [node name="Camera" type="Camera2D" parent="." unique_id=722503055]
 script = ExtResource("5_camera")
 GridPath = NodePath("../World/Grid")
+GridOverlayPath = NodePath("../HUD/ParentScreen/TabContainer/Grid/GridScreenOverlay")
 
 [node name="ExcavationSystem" type="Node" parent="." unique_id=1581167292]
 script = ExtResource("6_excav")

@@ -6,9 +6,13 @@ public partial class CameraController : Camera2D
 {
 	[Export] public NodePath GridPath { get; set; } = new("../Grid");
 
-	// Region-of-interest carve-outs. The grid is fit into the viewport area
-	// that isn't covered by the HUD bars at the top (stamina + collection
-	// strip) or the bottom (tab bar).
+	// When set, the camera fits the grid into this Control's actual screen rect
+	// instead of using the manual HudTopHeight / HudBottomHeight values.
+	// Point this at the GridScreenOverlay node so the grid always fills exactly
+	// the area between the collection strip and the tab bar, regardless of their sizes.
+	[Export] public NodePath? GridOverlayPath { get; set; }
+
+	// Fallback carve-outs used when GridOverlayPath is not set.
 	[Export] public float HudTopHeight { get; set; } = 130f;
 	[Export] public float HudBottomHeight { get; set; } = 110f;
 	[Export] public float SidePanelWidth { get; set; } = 0f;
@@ -18,6 +22,7 @@ public partial class CameraController : Camera2D
 	[Export] public float MaxZoom { get; set; } = 4f;
 
 	private Grid? _grid;
+	private Control? _gridOverlay;
 
 	public override void _Ready()
 	{
@@ -27,22 +32,46 @@ public partial class CameraController : Camera2D
 			GD.PushError($"CameraController: could not resolve Grid at '{GridPath}'.");
 			return;
 		}
-		FitGrid();
+
+		if (GridOverlayPath != null && !GridOverlayPath.IsEmpty)
+			_gridOverlay = GetNodeOrNull<Control>(GridOverlayPath);
+
+		if (_gridOverlay != null)
+			_gridOverlay.Resized += FitGrid;
+
 		GetViewport().SizeChanged += FitGrid;
 		_grid.MapAdvanced += FitGrid;
+
+		// Defer the initial fit so the HUD layout pass has completed first.
+		CallDeferred(MethodName.FitGrid);
 	}
 
-	// Picks a zoom level and camera position so the entire grid fits inside the
-	// viewport region not covered by the HUD bar (top) or collection panel (right).
+	// Picks a zoom level and camera position so the entire grid fits inside
+	// the available screen region — either the GridOverlay's actual rect or
+	// the manually specified HUD margins.
 	public void FitGrid()
 	{
 		if (_grid == null) return;
-		var viewport = GetViewportRect().Size;
 
-		float left = Margin;
-		float top = HudTopHeight + Margin;
-		float right = viewport.X - SidePanelWidth - Margin;
-		float bottom = viewport.Y - HudBottomHeight - Margin;
+		float left, top, right, bottom;
+
+		if (_gridOverlay != null)
+		{
+			var rect = _gridOverlay.GetGlobalRect();
+			left   = rect.Position.X + Margin;
+			top    = rect.Position.Y + Margin;
+			right  = rect.End.X - SidePanelWidth - Margin;
+			bottom = rect.End.Y - Margin;
+		}
+		else
+		{
+			var viewport = GetViewportRect().Size;
+			left   = Margin;
+			top    = HudTopHeight + Margin;
+			right  = viewport.X - SidePanelWidth - Margin;
+			bottom = viewport.Y - HudBottomHeight - Margin;
+		}
+
 		float availW = right - left;
 		float availH = bottom - top;
 
@@ -57,7 +86,7 @@ public partial class CameraController : Camera2D
 
 		var gridCenter = _grid.Position + gridPixels / 2f;
 		var availableCenter = new Vector2((left + right) / 2f, (top + bottom) / 2f);
-		var viewportCenter = viewport / 2f;
+		var viewportCenter = GetViewportRect().Size / 2f;
 		Position = gridCenter + (viewportCenter - availableCenter) / zoom;
 	}
 }

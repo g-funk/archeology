@@ -152,22 +152,23 @@ The grid pixel extent (`Width * TileSize` × `Height * TileSize`) is **not** cla
 
 ### Camera (`CameraController`)
 
-`Camera2D` attached to `Main/Camera`. On `_Ready` it calls `FitGrid` and subscribes to `Viewport.SizeChanged` so the grid refits whenever the viewport resizes (project setting change, window resize). `FitGrid`:
+`Camera2D` attached to `Main/Camera`. On `_Ready` it defers `FitGrid` (so the HUD layout pass completes first) and subscribes to `Viewport.SizeChanged`, `Grid.MapAdvanced`, and — when `GridOverlayPath` is set — `GridOverlay.Resized`. `FitGrid`:
 
-1. Computes the visible region not occupied by the HUD bar (top) or the collection panel (right): `(Margin, HudTopHeight) → (viewport.x - SidePanelWidth, viewport.y - Margin)`.
+1. If `GridOverlayPath` is set, reads the overlay Control's `GetGlobalRect()` to get the exact pixel region between the collection strip and the tab bar. Otherwise falls back to `(Margin, HudTopHeight) → (viewport.x - SidePanelWidth, viewport.y - HudBottomHeight - Margin)`.
 2. Picks `zoom = min(availableW / gridW, availableH / gridH)`, clamped to `[MinZoom, MaxZoom]`.
-3. Offsets `Position` so the grid centers on the *available* region rather than the full viewport — the panel and HUD don't cover the grid.
+3. Offsets `Position` so the grid centers on the available region.
+
+In `Main.tscn`, `GridOverlayPath` points to `GridScreenOverlay` — the expand-fill Control that sits between `CollectionStrip` and the tab bar in the Grid tab's `VBoxContainer`. This means the camera automatically adapts whenever the HUD layout changes.
 
 Changing `Grid.Width`, `Grid.Height`, or `Grid.TileSize` and rerunning automatically refits the view. Click coordinates remain correct because `ExcavationSystem` already routes through `GetGlobalMousePosition()` when a `Camera2D` is active.
 
-The collection panel ([ai-docs/collection.md](collection.md)) reads back the grid's bounds in viewport space each frame and sticks itself to the grid's top-right corner — so changing `SidePanelWidth` here keeps the grid out of the panel's reserved column, and `PanelWidth` on the panel keeps the panel itself within that column. Keep `SidePanelWidth ≥ PanelWidth + GapFromGrid`.
-
 #### Camera tunables (exported on `CameraController`)
 
-- `GridPath` — node path to the `Grid` (defaults to `../Grid`)
-- `HudTopHeight` — vertical space reserved for HUD title/instructions (default 80)
-- `SidePanelWidth` — horizontal space reserved for the collection panel (default 220)
-- `Margin` — outer padding around the grid (default 20)
+- `GridPath` — node path to the `Grid`
+- `GridOverlayPath` — node path to the `GridScreenOverlay` Control; when set, the camera uses its actual rect instead of the manual margin values
+- `HudTopHeight` / `HudBottomHeight` — fallback margins used when `GridOverlayPath` is not set
+- `SidePanelWidth` — horizontal space reserved (default 0)
+- `Margin` — inner padding around the grid inside the available rect (default 10)
 - `MinZoom` / `MaxZoom` — clamp range for the auto-fit zoom
 
 ---

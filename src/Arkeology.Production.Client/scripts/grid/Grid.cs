@@ -199,7 +199,11 @@ public partial class Grid : Node2D
 				cells.Add(new Vector2I(gx, gy));
 			}
 
-			if (!fits || cells.Count == 0) continue;
+			if (!fits || cells.Count == 0)
+			{
+				GD.PrintErr($"[Grid] map item id={shape.ItemId} at ({shape.X},{shape.Y}) layer={shape.Layer} does not fit — skipping.");
+				continue;
+			}
 
 			var frag = new Fragment(shape.ItemId, FragmentShape.SquareTwo, shape.Layer, cells);
 			_fragments.Add(frag);
