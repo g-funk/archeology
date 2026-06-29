@@ -1,3 +1,6 @@
+---
+model: haiku
+---
 Convert maps source data to binary format using the script at `.claude/skills/maps-to-bin/convert.py`.
 
 When given a file path as the argument, run:

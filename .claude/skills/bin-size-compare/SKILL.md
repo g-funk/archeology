@@ -1,3 +1,6 @@
+---
+model: haiku
+---
 Compare naive vs tokenized byte sizes for all three binary converters using test-data source files.
 
 Run all six variants, using `/dev/null` as the output path so nothing is written to disk but byte counts are still reported:

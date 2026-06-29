@@ -1,3 +1,6 @@
+---
+model: haiku
+---
 Regenerate all three binary data files from their default test-data sources.
 
 Run the following three commands in order, appending any arguments passed to this skill (e.g. `--tokenized`):

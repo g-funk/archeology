@@ -20,7 +20,7 @@ scraps:0
 ---
 id=10001
 w=14
-h=21
+h=22
 name=Map1
 description=Map 1
 layers:
@@ -33,7 +33,7 @@ shapes:
   id=1001
   l=4
   x=8
-  y=23
+  y=15
 scraps:1
 ---
 id=10002

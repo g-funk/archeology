@@ -1,3 +1,6 @@
+---
+model: haiku
+---
 Convert collections source data to binary format using the script at `.claude/skills/collections-to-bin/convert.py`.
 
 When given a file path as the argument, run:

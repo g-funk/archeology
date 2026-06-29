@@ -1,3 +1,6 @@
+---
+model: haiku
+---
 Convert archaeology item source data to binary format using the script at `.claude/skills/items-to-bin/convert.py`.
 
 When given a file path as the argument, run:

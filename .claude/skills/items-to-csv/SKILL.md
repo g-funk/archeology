@@ -1,3 +1,6 @@
+---
+model: haiku
+---
 Convert archaeology item source data to CSV using the script at `.claude/skills/items-to-csv/convert.py`.
 
 When given a file path as the argument, run:
